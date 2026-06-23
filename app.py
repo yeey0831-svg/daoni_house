@@ -10,12 +10,6 @@ st.set_page_config(page_title="쿠팡형 AI 상세페이지 생성기 v10.0", la
 st.title("🚀 우리 회사 전용 AI 상세페이지 제작 클라우드")
 st.caption("구글 제미나이 정식 API 기반 v10.0 (언제 어디서나 접속 가능한 독립 웹 앱 버전)")
 
-# 세션 상태(메모리 백엔드) 초기화
-if "clean_files_data" not in st.session_state:
-    st.session_state.clean_files_data = []
-if "screenshot_files_data" not in st.session_state:
-    st.session_state.screenshot_files_data = []
-
 # 2. 사이드바 - 사용자 입력창 구성
 st.sidebar.header("📋 상품 및 마케팅 정보 입력")
 api_key = st.sidebar.text_input("Google API Key를 입력하세요", type="password")
