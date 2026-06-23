@@ -49,7 +49,6 @@ with tab1:
     cols = st.columns(len(all_templates) if len(all_templates) > 0 else 1)
     
     selected_template_name = None
-    # 라디오 버튼이나 셀렉트박스로 최종 선택할 목록 만들기
     template_options = list(all_templates.keys())
     
     # 각 타입별 카드 형태 출력
@@ -62,7 +61,6 @@ with tab1:
             st.code(f"[진행 뼈대 구조]\n{t_data['structure']}", language="text")
             
     st.markdown("---")
-    # 사용자가 최종 구동할 타입을 딸깍 선택하는 스위치
     chosen_type = st.selectbox("🎯 오늘 제작에 사용할 상세페이지 공식을 최종 선택하세요:", template_options)
 
     # 사이드바 입력창 연동
@@ -77,7 +75,6 @@ with tab1:
     uploaded_files = st.sidebar.file_uploader("📂 [A] 일반 상품 이미지 업로드", type=["png", "jpg", "jpeg"], accept_multiple_files=True, key="cloud_file_uploader")
     screenshot_uploaders = st.sidebar.file_uploader("📸 [B] 벤치마킹 스크린샷 업로드", type=["png", "jpg", "jpeg"], accept_multiple_files=True, key="cloud_screenshot_uploader")
 
-    # 이미지 병합 리스트
     gemini_images = []
     if uploaded_files:
         for u_file in uploaded_files:
@@ -90,7 +87,6 @@ with tab1:
 
     page_number = st.sidebar.slider("출력할 상세페이지 단계 (1~8장)", 1, 8, 1)
 
-    # 실행 버튼
     if st.sidebar.button("✨ 쿠팡형 상세페이지 즉시 생성"):
         if not api_key:
             st.error("Google API Key를 입력해 주세요!")
@@ -106,12 +102,11 @@ with tab1:
                         st.subheader("📝 1단계: AI 마케팅 카피 및 기획서")
                         st.write(f"⚙️ **[안내]** 선택하신 `{chosen_type}` 구조를 주입하여 조합 중...")
                         
-                        # 프롬프트에 사용자가 선택한 미리보기 템플릿의 상세 구조를 강제로 주입!
                         prompt = f"""너는 전환율 극대화 상세페이지를 설계하는 인공지능 마케터야.
                         전체 8장 구조 중 현재 [{page_number}번째 장]을 기획해야 해.
                         
-                        [중요 가이드라인 - 반드시 이 레이아웃 흐름 규칙을 따를 것]:
-                        우리가 오늘 채택한 상세페이지 전체 공식 뼈대는 다음과 같아:
+                        [중요 가이드라인]:
+                        오늘 채택한 상세페이지 전체 공식 뼈대:
                         {all_templates[chosen_type]['structure']}
                         
                         위 흐름을 바탕으로 이번 {page_number}번째 장에 맞는 최적의 내용을 도출해줘.
@@ -201,7 +196,6 @@ with tab2:
                     response = analysis_model.generate_content(analysis_prompt)
                     res_text = response.text
                     
-                    # AI의 답변에서 설명과 구조 파트 파싱(추출)하기
                     parsed_desc = "AI가 분석한 커스텀 벤치마킹 레이아웃입니다."
                     parsed_structure = benchmark_data[:100] + "..."
                     
@@ -211,13 +205,12 @@ with tab2:
                         if "구조:" in line:
                             parsed_structure = line.replace("구조:", "").strip()
                     
-                    # 세션 상태에 저장하여 실시간으로 1번 탭 메뉴에 추가 연동
                     st.session_state["custom_templates"][new_template_title] = {
                         "desc": parsed_desc,
                         "structure": parsed_structure
                     }
                     
-                    st.success(f"🎉 성공! [{new_template_title}]이 성공적으로 분석되어 '1. 상세페이지 고속 제작소'의 선택 메뉴와 미리보기 카드에 실시간 자동 탑재되었습니다! 상단 1번 탭을 확인해 보세요.")
+                    st.success(f"🎉 성공! [{new_template_title}]이 성공적으로 분석되어 탑재되었습니다!")
                     st.balloons()
                     
                 except Exception as e:
