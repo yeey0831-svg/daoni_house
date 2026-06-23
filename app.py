@@ -182,7 +182,7 @@ with tab2:
             with st.spinner("🤖 제미나이가 주입된 주소/데이터의 상세페이지 기승전결 뼈대를 역추적 분석 중..."):
                 try:
                     genai.configure(api_key=new_api_key)
-                    analysis_model = genai.GenerativeModel("gemini-1.5-pro")
+                    analysis_model = genai.GenerativeModel("gemini-1.5-flash")
                     
                     analysis_prompt = f"""너는 상위 1% 마케터이자 소스 코드 프롬프트 엔지니어 수석 디자이너야.
                     제공된 [벤치마킹 데이터]를 읽고, 상품 고유 정보를 싹 제외한 '순수 상세페이지 레이아웃 구조와 스토리텔링 흐름'만 기승전결 뼈대로 명확히 정제해줘.
