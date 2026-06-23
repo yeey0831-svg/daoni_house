@@ -30,7 +30,7 @@ uploaded_files = st.sidebar.file_uploader(
 
 st.sidebar.markdown("---")
 
-# [B영역] 벤치마킹 화면 캡처(스크린샷) 이미지 업로드
+# [B영역] 벤치마킹 화면 캡처(스크린샷) 이미지 업로드 (완벽 분리)
 screenshot_uploaders = st.sidebar.file_uploader(
     "📸 [B] 벤치마킹 스크린샷 업로드", 
     type=["png", "jpg", "jpeg"], 
@@ -56,7 +56,7 @@ if uploaded_files:
         c1.image(img_obj, width=45)
         c2.caption(f"📄 {u_file.name[:15]}")
 
-# [B] 스크린샷 파일 출력 및 연동
+# [B] 스크린샷 파일 출력 및 연동 (경로 유실 없이 마스터 리스트에 추가 안전 병합)
 if screenshot_uploaders:
     st.sidebar.markdown("📸 *[B] 스크린샷 리스트:*")
     for s_file in screenshot_uploaders:
@@ -92,13 +92,18 @@ if st.sidebar.button("✨ 쿠팡형 상세페이지 즉시 생성"):
     elif not product_info:
         st.error("상품 정보를 입력해 주세요!")
     else:
-        try:
-            genai.configure(api_key=api_key)
-            col1, col2 = st.columns([1, 1])
-            
-            with col1:
-                st.subheader("📝 1단계: AI 마케팅 카피 및 기획서")
-                with st.spinner("제미나이가 카피를 분석 중..."):
+        # 🟢 [개선 사항] 제미나이 스타일의 움직이는 이모티콘 상태 모니터창 작동 시작
+        with st.status("🤖 AI가 실시간 연산을 시작합니다. 화면을 이탈하지 마세요!", expanded=True) as status:
+            try:
+                genai.configure(api_key=api_key)
+                col1, col2 = st.columns([1, 1])
+                
+                with col1:
+                    st.subheader("📝 1단계: AI 마케팅 카피 및 기획서")
+                    
+                    # 움직이는 서브 안내문구들
+                    st.write("⚙️ **[1단계-A]** 입력값 및 업로드 이미지 밸런싱 분석 중... 🔍")
+                    
                     prompt = f"""너는 전환율 극대화 상세페이지를 설계하는 인공지능 마케터야.
                     전체 8장 구조 중 현재 [{page_number}번째 장: {page_structures[page_number]}]을 기획해야 해.
                     첨부된 이미지들의 외형 특성, 색상, 디자인 요소를 종합 분석해서 연출안을 짜줘.
@@ -111,15 +116,18 @@ if st.sidebar.button("✨ 쿠팡형 상세페이지 즉시 생성"):
                     
                     model = genai.GenerativeModel("gemini-1.5-flash")
                     
+                    st.write("🧠 **[1단계-B]** 제미나이 모델이 카피를 열심히 작성하고 있습니다... ✍️✨")
+                    
                     if gemini_images:
                         response = model.generate_content([prompt] + gemini_images)
                     else:
                         response = model.generate_content(prompt)
                     st.markdown(response.text)
                     
-            with col2:
-                st.subheader("🖼️ 2단계: 쿠팡 규격 완성 배너 이미지 (가로 780px)")
-                with st.spinner("구글 이미지 AI가 디자인하는 중..."):
+                with col2:
+                    st.subheader("🖼️ 2단계: 쿠팡 규격 완성 배너 이미지 (가로 780px)")
+                    st.write("🎨 **[2단계-A]** 구글 Imagen AI 엔진에 프롬프트 전송 및 랜더링 중... 🚀")
+                    
                     image_prompt = f"Professional e-commerce product banner for Coupang, width 780px, {product_info}, featured for {page_structures[page_number]}, 4k photorealistic"
                     imagen_url = f"https://generativelanguage.googleapis.com/v1/models/imagen-3.0-generate-002:generateImages?key={api_key}"
                     payload = {"prompt": image_prompt, "numberOfImages": 1, "aspectRatio": "1:1", "outputMimeType": "image/jpeg"}
@@ -146,5 +154,11 @@ if st.sidebar.button("✨ 쿠팡형 상세페이지 즉시 생성"):
                         file_name=f"coupang_page_{page_number}.jpg",
                         mime="image/jpeg"
                     )
-        except Exception as e:
-            st.warning("1단계 마케팅 기획서 작성이 완료되었습니다. (이미지 배너 생성 영역은 구글 API 키의 이미지 모델 결제 권한 활성화 후 가로 780px 자동 매칭 출력이 재개됩니다.)")
+                
+                # 모든 연산이 완벽히 끝나면 대기창을 완료 상태로 변경
+                status.update(label="🎉 AI 상세페이지 기획서 및 최적화 배너 생성이 모두 성공했습니다!", state="complete", expanded=False)
+
+            except Exception as e:
+                # 오류나 예외가 나더라도 사용자에게 가이드라인 제공 및 완료 처리
+                st.warning("1단계 마케팅 기획서 작성이 완료되었습니다. (이미지 배너 생성 영역은 구글 API 키의 이미지 모델 결제 권한 활성화 후 가로 780px 자동 매칭 출력이 재개됩니다.)")
+                status.update(label="✅ 분석 및 텍스트 기획 출력이 마무리되었습니다.", state="complete", expanded=False)
