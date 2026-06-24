@@ -42,7 +42,7 @@ def load_korean_font():
     except Exception:
         pass
     
-    # 2차 시도: 운영체제별 로컬 한글 폰트 패스 탐색 (네트워크 단절 대비 및 글자 깨짐 방지)
+    # 2차 시도: 운영체제별 로컬 한글 폰트 패스 탐색
     system_fonts = [
         "C:/Windows/Fonts/malgun.ttf",       # Windows
         "C:/Windows/Fonts/malgunbd.ttf",     # Windows Bold
@@ -111,7 +111,6 @@ def draw_benchmarked_coupang_page(step_num, title, description, prod_name):
         draw.text((70, 100), "PREMIUM HOUSEHOLD SOLUTIONS", fill=(0, 102, 255), font=font_badge)
         draw.text((70, 135), "공간의 가치를 바꾸는 단 하나의 선택", fill=(110, 115, 125), font=font_sub_head)
         
-        # 상품명이 길어질 경우를 대비한 자동 줄바꿈(Text Wrap) 안전 가이드 적용
         wrapped_lines = textwrap.wrap(display_prod, width=14)
         y_offset = 180
         for line in wrapped_lines:
@@ -163,4 +162,23 @@ def draw_benchmarked_coupang_page(step_num, title, description, prod_name):
 
     # --- [BLOCK 4: 입체적 공간 스택 적층 레이아웃] ---
     elif step_num == 4:
-        # 🚨 [기존 에러 해결] 잘못 중복 삽입되었던 규격 에러 라인을 제거
+        image = Image.new("RGB", (width, height), color=(255, 255, 255))
+        draw = ImageDraw.Draw(image)
+        
+        draw.rectangle([50, 70, 55, 105], fill=(0, 102, 255))
+        draw.text((70, 75), "CORE FEATURE 02", fill=(0, 102, 255), font=font_badge)
+        
+        draw.text((60, 120), "위로 위로, 빈틈없이 수납 완성!", fill=(20, 24, 35), font=font_sub_head)
+        draw.text((60, 160), "무너지지 않는 견고한 모듈러 스택 시스템", fill=(20, 24, 35), font=font_main_head)
+        
+        # 메인 컨텐츠 영역 드로잉 박스
+        draw.rectangle([60, 240, 720, 760], fill=(245, 248, 255), outline=(210, 220, 240), width=2)
+        draw.text((180, 480), "📦 [다단 적층으로 수납 효율 200% 극대화 연출 이미지]", fill=(0, 90, 220), font=font_body)
+        
+        # 하단 디테일 설명 텍스트 영역 
+        draw.rounded_rectangle([60, 800, 720, 930], fill=(245, 247, 250), radius=5)
+        draw.text((90, 825), "✔ 상하단 결합 홈 설계로 흔들림 없는 완벽 적층 고정", fill=(50, 55, 65), font=font_body)
+        draw.text((90, 870), "✔ 고강도 고순도 PP 소재 채택으로 고하중도 휨 없이 지탱", fill=(50, 55, 65), font=font_body)
+        
+    else:
+        # 안전용 예외 블록 캔
