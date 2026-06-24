@@ -69,7 +69,7 @@ with tab1:
             try:
                 genai.configure(api_key=api_key)
                 # 💡 404 에러 해결을 위해 -latest 명시
-                model = genai.GenerativeModel("gemini-1.5-flash-latest") 
+                model = genai.GenerativeModel("gemini-pro") 
                 
                 template = st.session_state["selected_bench_data"] or "1.문제제기->2.공감->3.해결책->4.상세스펙->5.비교우위->6.리뷰->7.혜택->8.구매촉구"
                 steps = template.split("->")
