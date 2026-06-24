@@ -1,16 +1,29 @@
+import sys
+import subprocess
+
+# =================================================================
+# 📦 [필수 도구 자동 설치] bs4와 requests가 없으면 서버가 알아서 설치합니다.
+# =================================================================
+try:
+    import requests
+    from bs4 import BeautifulSoup
+except ModuleNotFoundError:
+    # 스트림릿 서버 환경에 크롤링 필수 패키지 강제 주입
+    subprocess.check_call([sys.executable, "-m", "pip", "install", "beautifulsoup4", "requests"])
+    import requests
+    from bs4 import BeautifulSoup
+
 import streamlit as st
 import json
-import requests
 import io
-from bs4 import BeautifulSoup
 from PIL import Image, ImageDraw, ImageFont
 
 # =================================================================
 # ⚙️ [초기 설정 및 레이아웃 선언]
 # =================================================================
-st.set_page_config(page_title="쿠팡형 AI 상세페이지 마스터 v2.6", layout="wide")
+st.set_page_config(page_title="쿠팡형 AI 상세페이지 마스터 v2.7", layout="wide")
 
-# OS별 안전한 폰트 로더 (원본 코드의 안정성 복원)
+# OS별 안전한 폰트 로더
 def get_safe_font(font_size=20):
     font_paths = [
         "NanumGothic.ttf",
@@ -96,7 +109,6 @@ tab1, tab2, tab3, tab4 = st.tabs([
 with tab1:
     st.markdown("### 📦 PAGE 1 : 실시간 레이아웃 및 상품 이미지 매칭")
     
-    # 사장님이 요청하신 1페이지 상품 이미지 업로드 박스
     st.markdown("#### 📸 메인 상품 실물 사진 업로드")
     img_file = st.file_uploader("상세페이지 1페이지에 넣을 상품 사진(PNG, JPG)을 선택하세요", type=["png", "jpg", "jpeg"])
     if img_file is not None:
@@ -127,7 +139,6 @@ with tab2:
                 extracted_title, extracted_desc = analyze_url_to_data(input_url)
                 if extracted_title:
                     st.success("🎉 성공적으로 링크 분석 완료! 추출된 데이터가 상세페이지 기획에 대입되었습니다.")
-                    # 추출된 값을 전역 세션에 주입
                     st.session_state["main_title"] = f"[링크소구] {extracted_title}"
                     st.session_state["p2_desc"] = extracted_desc
                     
@@ -160,13 +171,11 @@ with tab4:
     
     if st.button("🔥 완성형 상세페이지 8장 그룹화 및 마스터 이미지 빌드"):
         with st.spinner("PIL 드로잉 픽셀 맵 컴파일 중..."):
-            # 가로 780px 고정, 세로 1500px의 빈 캔버스 생성
             master_w = 780
             master_h = 1600
             canvas = Image.new("RGB", (master_w, master_h), color="#FFFFFF")
             draw = ImageDraw.Draw(canvas)
             
-            # 폰트 세팅
             font_title = get_safe_font(28)
             font_sub = get_safe_font(16)
             font_body = get_safe_font(18)
@@ -175,23 +184,21 @@ with tab4:
             draw.text((40, 40), st.session_state["sub_title"], fill="#2563EB", font=font_sub)
             next_y = draw_wrapped_text(draw, st.session_state["main_title"], font_title, "#111827", 700, 40, 75)
             
-            # 업로드한 상품 실물 이미지가 있다면 캔버스에 안착
             if st.session_state["p1_image"] is not None:
                 p1_img_resized = st.session_state["p1_image"].copy()
                 p1_img_resized.thumbnail((700, 400))
                 canvas.paste(p1_img_resized, (40, next_y + 20))
             
             # --- [SECTION 2] 2페이지 드로잉 (문제 제기) ---
-            draw.rectangle([0, 650, 780, 1000], fill="#F9FAFB") # 연회색 배경 박스
-            draw.text((40, 690), st.session_state["p2_title"], fill="#EF4444", font=font_title) # 빨간 제목
+            draw.rectangle([0, 650, 780, 1000], fill="#F9FAFB")
+            draw.text((40, 690), st.session_state["p2_title"], fill="#EF4444", font=font_title)
             draw_wrapped_text(draw, st.session_state["p2_desc"], font_body, "#4B5563", 700, 40, 750)
             
             # --- [SECTION 3] 4페이지 드로잉 (실물 규격화) ---
             draw.text((40, 1060), st.session_state["p4_title"], fill="#111827", font=font_title)
-            draw.rectangle([40, 1130, 740, 1500], fill="#E5E7EB") # 크롭 가이드라인 박스 시뮬레이션
+            draw.rectangle([40, 1130, 740, 1500], fill="#E5E7EB")
             draw.text((80, 1300), "[여기에 4페이지 상세 연출 그래픽 컴포넌트 바인딩 완료]", fill="#9CA3AF", font=font_body)
             
-            # 메모리 버퍼로 이미지 저장하여 스트림릿에 전달
             buf = io.BytesIO()
             canvas.save(buf, format="PNG")
             byte_im = buf.getvalue()
@@ -205,7 +212,6 @@ with tab4:
                 mime="image/png"
             )
             
-            # 화면에 빌드된 이미지 원본 크기 가이드 노출
             st.image(canvas, caption="실제 컴파일 완료된 가로 780px 통이미지 원본 스냅샷", use_container_width=True)
 
 if __name__ == "__main__":
