@@ -9,7 +9,7 @@ from datetime import datetime
 # 1. 페이지 초기 설정 및 스타일 강제 주입
 st.set_page_config(page_title="쿠팡형 프로페셔널 AI 상세페이지 빌더 v4", layout="wide")
 
-# 상세페이지 배너들이 벌어지지 않고 실제 몰처럼 벼리게 착 붙어서 내려가도록 마진 컨트롤 CSS 주입
+# 상세페이지 배너들이 벌어지지 않고 실제 몰처럼 바짝 붙어서 내려가도록 마진 컨트롤 CSS 주입
 st.markdown("""
     <style>
     [data-testid="stImage"] {
@@ -69,9 +69,9 @@ menu = st.radio(
     horizontal=True
 )
 
-# [핵심 개편] 첨부 레퍼런스 스타일을 녹여낸 780x1000 고정 규격 드로잉 엔진
+# [에러 수정 및 기능 고도화] 780x1000 고정 규격 드로잉 엔진
 def create_real_coupang_page(step_num, title, description, prod_name):
-    # 사용자가 크기를 변경할 수 없도록 가로 780px, 세로 1000px 절대 규격 고정
+    # 가로 780px, 세로 1000px 절대 규격 고정 (임의 변경 불가)
     width, height = 780, 1000
     
     font_bytes = load_korean_font_bytes()
@@ -85,7 +85,7 @@ def create_real_coupang_page(step_num, title, description, prod_name):
 
     display_prod = prod_name if prod_name else "루시아이 스택 슬라이딩 팬트리 정리함"
 
-    # --- [스타일 1: 1페이지 문제 제기 섹션 - 레퍼런스 3번 스타일 전격 반영] ---
+    # --- [스타일 1: 1페이지 문제 제기 섹션] ---
     if step_num == 1:
         image = Image.new("RGB", (width, height), color=(245, 245, 247))
         draw = ImageDraw.Draw(image)
@@ -93,7 +93,7 @@ def create_real_coupang_page(step_num, title, description, prod_name):
         # 상단 강렬한 다크블랙 경고 박스 영역
         draw.rectangle([0, 0, 780, 420], fill=(30, 32, 35))
         
-        # 경고 원형 레드 배지 drawn
+        # 경고 원형 레드 배지
         draw.ellipse([365, 50, 415, 100], fill=(225, 40, 40))
         draw.text((386, 58), "!", fill=(255, 255, 255), font=font_sub_head)
         
@@ -105,19 +105,16 @@ def create_real_coupang_page(step_num, title, description, prod_name):
         draw.rectangle([60, 460, 720, 800], fill=(225, 228, 232), outline=(200, 205, 210), width=1)
         draw.text((280, 620), "[여기에 주방 문제점 사진 삽입]", fill=(100, 110, 120), font=font_sub_head)
         
-        # 하단 강렬한 레드 카피라이팅 리본 바
-        draw.rectangle([60, 830, 720, 910], fill=(200, 30, 40), radius=10)
+        # ★ [버그 수정 완료] draw.rectangle -> draw.rounded_rectangle로 명칭 변경하여 에러 패치 완료!
+        draw.rounded_rectangle([60, 830, 720, 910], fill=(200, 30, 40), radius=10)
         draw.text((230, 850), '" 안쪽 물건을 꺼내기가 너무 힘들어요 "', fill=(255, 255, 255), font=font_sub_head)
 
-    # --- [스타일 2: 2페이지 메인 헤드 제품 소개 - 레퍼런스 2번 스타일 반영] ---
+    # --- [스타일 2: 2페이지 메인 헤드 제품 소개] ---
     elif step_num == 2:
         image = Image.new("RGB", (width, height), color=(255, 255, 255))
         draw = ImageDraw.Draw(image)
         
-        # 세련된 프리미엄 라벨링 타이포
         draw.text((70, 70), "LUXIAI SPECIAL LIFESTYLE", fill=(0, 102, 255), font=font_badge)
-        
-        # 메인 브랜드 타이틀 상품명 대형 마킹
         draw.text((70, 110), "루시아이", fill=(22, 28, 45), font=font_sub_head)
         draw.text((70, 150), "스택 슬라이딩 팬트리 정리함", fill=(22, 28, 45), font=font_main_head)
         
@@ -129,15 +126,13 @@ def create_real_coupang_page(step_num, title, description, prod_name):
         draw.rectangle([60, 340, 720, 940], fill=(248, 249, 250), outline=(230, 235, 240), width=2)
         draw.text((260, 620), "[여기에 제품 대표 연출 사진 업로드]", fill=(140, 145, 155), font=font_sub_head)
 
-    # --- [스타일 3: 일반 세일즈 포인트 정보 정돈 스크롤 배너] ---
+    # --- [스타일 3: 일반 세일즈 포인트 정보 스크롤 배너] ---
     else:
         image = Image.new("RGB", (width, height), color=(255, 255, 255))
         draw = ImageDraw.Draw(image)
         
-        # 상단 섹션 넘버링 포인트
         draw.text((60, 60), f"SECTION 0{step_num}", fill=(0, 102, 255), font=font_sub_head)
         
-        # 서브 타이틀 wrap 연산
         wrapped_titles = textwrap.wrap(title, width=18)
         y_title_offset = 110
         for t_line in wrapped_titles:
@@ -213,7 +208,7 @@ elif menu == "➕ 2. 벤치마킹 데이터 등록":
             st.success("✅ 타겟 상세페이지 흐름 학습 성공! 3페이지에서 롱디자인을 확인해 보세요.")
 
 # ====================================================
-# 📂 3. 상세페이지 샘플 제작 및 검토 탭 (★ 사이즈 절대 고정 및 롱배너 레이아웃 최적화)
+# 📂 3. 상세페이지 샘플 제작 및 검토 탭 (가로 크기 780px 절대 강제 고정 뷰)
 # ====================================================
 elif menu == "📂 3. 상세페이지 샘플 제작 및 검토":
     st.markdown("### 📄 3페이지: 실전 쿠팡 규격(가로 780px 고정) 수직 스크롤 검토 공간")
@@ -234,12 +229,12 @@ elif menu == "📂 3. 상세페이지 샘플 제작 및 검토":
                 st.success("🚀 저장 및 그룹 묶음 이관이 완료되었습니다!")
         st.markdown("---")
         
-        # [핵심 변경] 3분할 열 레이아웃을 통해 가운데(col_mid)에만 780px 크기를 절대 유지하여 수직으로 누적 출력
+        # 3분할 열 레이아웃을 사용해 가운데(col_mid)에만 780px 크기를 절대 유지하여 스크롤 뷰 구현
         col_left, col_mid, col_right = st.columns([1, 4, 1])
         
         with col_mid:
             for idx, img in enumerate(st.session_state["page3_saved_images"]):
-                # width=780 지정을 통해 강제 리사이징 억제 및 규격 통일화 실현
+                # width=780을 주어 반응형 무력화 및 고정 크기 출력 보장
                 st.image(img, width=780, caption=f"Coupang Detail Block Section #{idx + 1}")
                 
                 buf = io.BytesIO()
