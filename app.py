@@ -6,9 +6,6 @@ import io
 import textwrap
 import os
 
-# [추가] 최신 Gemini API 패키지 (설치 필요: pip install google-genai)
-# import google.genai as genai 
-
 # 1. 페이지 초기 설정 및 스타일 주입
 st.set_page_config(page_title="쿠팡형 프로페셔널 AI 상세페이지 빌더 v16.0", layout="wide")
 
@@ -34,12 +31,21 @@ if "page3_meta_data" not in st.session_state:
 
 @st.cache_data
 def load_korean_font():
-    # 1차 시도: 구글 나눔고딕 웹 폰트 다운로드
+    """웹에서 폰트를 다운로드하여 안전하게 파일로 임시 저장합니다 (OSError 방지)"""
+    font_filename = "NanumGothic-Bold.ttf"
+    
+    # 이미 다운로드 받은 파일이 있다면 해당 경로 반환
+    if os.path.exists(font_filename):
+        return font_filename
+
+    # 1차 시도: 구글 나눔고딕 웹 폰트 다운로드 및 파일 저장
     url = "https://github.com/google/fonts/raw/main/ofl/nanumgothic/NanumGothic-Bold.ttf"
     try:
         response = requests.get(url, timeout=5)
         if response.status_code == 200:
-            return io.BytesIO(response.content)
+            with open(font_filename, "wb") as f:
+                f.write(response.content)
+            return font_filename
     except Exception:
         pass
     
@@ -182,4 +188,76 @@ def draw_benchmarked_coupang_page(step_num, title="", description="", prod_name=
         draw.text((90, 870), "✔ 고강도 고순도 PP 소재 채택으로 고하중도 휨 없이 지탱", fill=(50, 55, 65), font=font_body)
 
     # --- [BLOCK 5: 내구성 및 고하중 테스트 검증] ---
-    elif step_
+    elif step_num == 5:
+        image = Image.new("RGB", (width, height), color=(255, 255, 255))
+        draw = ImageDraw.Draw(image)
+        
+        draw.rectangle([50, 70, 55, 105], fill=(0, 102, 255))
+        draw.text((70, 75), "TRUST & QUALITY", fill=(0, 102, 255), font=font_badge)
+        draw.text((60, 120), "무거운 주방 가전도 끄떡없이", fill=(20, 24, 35), font=font_sub_head)
+        draw.text((60, 160), "변형이나 뒤틀림 없는 압도적 내구성 고하중 설계", fill=(20, 24, 35), font=font_main_head)
+        
+        draw.rectangle([60, 240, 720, 760], fill=(252, 250, 245), outline=(235, 225, 210), width=2)
+        draw.text((220, 480), "🏋️‍♂️ [생수병/무거운 냄비 적재 내구성 실험 사진]", fill=(140, 100, 50), font=font_body)
+        
+        draw.rounded_rectangle([60, 800, 720, 930], fill=(245, 247, 250), radius=5)
+        draw.text((90, 825), "✔ 자체 하중 테스트 성적서 획득 (안심 사용 기준 충족)", fill=(50, 55, 65), font=font_body)
+        draw.text((90, 870), "✔ 충격과 스크래치에 강한 세미매트 텍스처 마감 처리", fill=(50, 55, 65), font=font_body)
+
+    # --- [BLOCK 6: 다양한 공간 활용 시나리오 가이드] ---
+    elif step_num == 6:
+        image = Image.new("RGB", (width, height), color=(255, 255, 255))
+        draw = ImageDraw.Draw(image)
+        
+        draw.text((60, 80), "MULTI-USE SCENARIOS", fill=(0, 102, 255), font=font_badge)
+        draw.text((60, 120), "주방, 드레스룸, 다용도실까지 어디서나", fill=(20, 24, 35), font=font_main_head)
+        
+        # 2분할 레이아웃 공간 연출
+        draw.rectangle([60, 200, 380, 650], fill=(245, 245, 245), outline=(220, 220, 220))
+        draw.text((120, 410), "🍳 [싱크대 하부장 수납]", fill=(100, 100, 100), font=font_badge)
+        
+        draw.rectangle([400, 200, 720, 650], fill=(245, 245, 245), outline=(220, 220, 220))
+        draw.text((160, 410), "🥫 [팬트리 식자재 정리]", fill=(100, 100, 100), font=font_badge)
+        
+        draw.rounded_rectangle([60, 700, 720, 930], fill=(240, 245, 240), radius=5)
+        draw.text((90, 740), "💡 스타일링 가이드 : 인테리어를 해치지 않는 모던 화이트 톤으로", fill=(40, 80, 40), font=font_body)
+        draw.text((90, 785), "어떤 가구와 배치해도 이질감 없이 자연스럽게 녹아듭니다.", fill=(40, 80, 40), font=font_body)
+
+    # --- [BLOCK 7: 정밀 규격 및 상세 스펙] ---
+    elif step_num == 7:
+        image = Image.new("RGB", (width, height), color=(255, 255, 255))
+        draw = ImageDraw.Draw(image)
+        
+        draw.text((60, 80), "SIZE & SPECIFICATION", fill=(100, 105, 115), font=font_badge)
+        draw.text((60, 120), "제품 상세 사이즈를 확인하세요", fill=(20, 24, 35), font=font_main_head)
+        
+        draw.rectangle([60, 200, 720, 600], fill=(250, 250, 250), outline=(230, 230, 230))
+        draw.text((250, 380), "📐 [정면/측면 입체 실측 가이드 도면]", fill=(120, 125, 135), font=font_body)
+        
+        # 스펙 테이블 가이드 라인
+        draw.line([(60, 660), (720, 660)], fill=(200, 200, 200), width=2)
+        draw.text((80, 690), "제 품 명", fill=(100, 100, 100), font=font_body)
+        draw.text((240, 690), display_prod, fill=(30, 30, 30), font=font_body)
+        
+        draw.line([(60, 740), (720, 740)], fill=(230, 230, 230), width=1)
+        draw.text((80, 770), "소     재", fill=(100, 100, 100), font=font_body)
+        draw.text((240, 770), "최고급 고순도 PP (Polypropylene), 스틸 합금 레일", fill=(30, 30, 30), font=font_body)
+        
+        draw.line([(60, 820), (720, 820)], fill=(230, 230, 230), width=1)
+        draw.text((80, 850), "제 조 국", fill=(100, 100, 100), font=font_body)
+        draw.text((240, 850), "대한민국 (Premium 자체 공정 제조)", fill=(30, 30, 30), font=font_body)
+        draw.line([(60, 900), (720, 900)], fill=(200, 200, 200), width=2)
+
+    # --- [BLOCK 8: 마지막 구매 촉구 및 CTA 배너] ---
+    elif step_num == 8:
+        image = Image.new("RGB", (width, height), color=(22, 28, 45))
+        draw = ImageDraw.Draw(image)
+        
+        draw.text((270, 180), "OUR BRAND COMMITMENT", fill=(255, 215, 0), font=font_badge)
+        draw.text((150, 240), "고민은 배송을 늦출 뿐입니다.", fill=(255, 255, 255), font=font_sub_head)
+        
+        # 타이틀 줄바꿈 가이드
+        draw.text((100, 310), "지금 바로 주방의 격을 바꾸고", fill=(255, 255, 255), font=font_main_head)
+        draw.text((100, 360), "수납 스트레스에서 완벽히 해방되세요!", fill=(255, 255, 255), font=font_main_head)
+        
+        draw.rectangle([100, 480, 680, 750], fill=(3
