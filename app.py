@@ -1,346 +1,304 @@
 import streamlit as st
-import requests
 import json
-from PIL import Image, ImageDraw, ImageFont
-import io
-import textwrap
+import base64
 import os
+from weasyprint import HTML, CSS
 
-# 1. 페이지 초기 설정 및 스타일 주입
-st.set_page_config(page_title="쿠팡형 프로페셔널 AI 상세페이지 빌더 v16.0", layout="wide")
+# 1. 페이지 초기 설정 (와이드 레이아웃 및 앱 타이틀)
+st.set_page_config(page_title="쿠팡형 넥스트 AI 상세페이지 빌더 v22.0", layout="wide")
 
-st.markdown("""
-    <style>
-    [data-testid="stImage"] {
-        display: flex;
-        justify-content: center;
-        margin-bottom: 0px !important;
-        padding-bottom: 0px !important;
+# 2. 고화질 렌더링 엔진 (HTML/CSS -> 이미지/PDF 변환)
+def render_json_to_image(json_data):
+    """
+    JSON 데이터를 세련된 HTML/CSS 템플릿으로 변환한 뒤,
+    WeasyPrint를 사용하여 쿠팡 규격(가로 780px)의 고화질 바이너리로 렌더링합니다.
+    """
+    # 기본 스타일 및 웹폰트 주입 (나눔고딕 적용)
+    html_content = f"""
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="utf-8">
+        <style>
+            @import url('https://fonts.googleapis.com/css2?family=Nanum+Gothic:wght@400;700;800&display=swap');
+            @page {{
+                size: 780px auto;
+                margin: 0;
+            }}
+            body {{
+                width: 780px;
+                margin: 0;
+                padding: 0;
+                font-family: 'Nanum Gothic', sans-serif;
+                background-color: #ffffff;
+                color: #333333;
+                -webkit-print-color-adjust: exact;
+            }}
+            .block {{
+                width: 780px;
+                box-sizing: border-box;
+                padding: 60px 50px;
+                text-align: center;
+                overflow: hidden;
+            }}
+            /* 블록 타입별 스타일 시트 */
+            .header_hero {{
+                background-color: #1a233a;
+                color: #ffffff;
+                padding: 80px 50px;
+            }}
+            .header_hero .badge {{
+                color: #ffb703;
+                font-size: 16px;
+                font-weight: 700;
+                letter-spacing: 2px;
+                margin-bottom: 15px;
+                display: block;
+            }}
+            .header_hero .sub_title {{
+                color: #cbd5e1;
+                font-size: 24px;
+                margin-bottom: 20px;
+                font-weight: 400;
+            }}
+            .header_hero .main_title {{
+                font-size: 42px;
+                font-weight: 800;
+                line-height: 1.3;
+                color: #ffffff;
+                word-break: keep-all;
+            }}
+            
+            .pain_point {{
+                background-color: #111111;
+                color: #ffffff;
+            }}
+            .pain_point .warning_icon {{
+                color: #ef4444;
+                font-size: 40px;
+                margin-bottom: 15px;
+            }}
+            .pain_point .title {{
+                font-size: 32px;
+                font-weight: 700;
+                color: #f3f4f6;
+                margin-bottom: 30px;
+                line-height: 1.4;
+            }}
+            .pain_point .quote_box {{
+                background-color: #222222;
+                border-left: 5px solid #ef4444;
+                padding: 20px;
+                font-size: 20px;
+                color: #dc2626;
+                font-weight: 700;
+                text-align: left;
+                margin: 0 auto;
+                max-width: 600px;
+            }}
+
+            .feature_grid_2x2 {{
+                background-color: #ffffff;
+            }}
+            .feature_grid_2x2 .section_title {{
+                font-size: 28px;
+                font-weight: 700;
+                color: #0f172a;
+                margin-bottom: 40px;
+            }}
+            .grid_container {{
+                display: block;
+                text-align: left;
+            }}
+            .grid_item {{
+                background-color: #f8fafc;
+                border: 1px solid #e2e8f0;
+                border-radius: 8px;
+                padding: 25px;
+                margin-bottom: 20px;
+            }}
+            .grid_item .item_title {{
+                font-size: 22px;
+                font-weight: 700;
+                color: #1e40af;
+                margin-bottom: 10px;
+            }}
+            .grid_item .item_desc {{
+                font-size: 16px;
+                color: #475569;
+                line-height: 1.5;
+            }}
+        </style>
+    </head>
+    <body>
+    """
+
+    # JSON 데이터를 순회하며 HTML 마크업 동적 생성
+    for block in json_data.get("blocks", []):
+        b_type = block.get("type")
+        content = block.get("content", {})
+        
+        if b_type == "header_hero":
+            html_content += f"""
+            <div class="block header_hero">
+                <span class="badge">PREMIUM SELECTION</span>
+                <div class="sub_title">{content.get('sub_title', '')}</div>
+                <div class="main_title">{content.get('main_title', '')}</div>
+            </div>
+            """
+        elif b_type == "pain_point":
+            html_content += f"""
+            <div class="block pain_point">
+                <div class="warning_icon">🚨</div>
+                <div class="title">{content.get('title', '')}</div>
+                <div class="quote_box">“ {content.get('quote', '')} ”</div>
+            </div>
+            """
+        elif b_type == "feature_grid_2x2":
+            html_content += f"""
+            <div class="block feature_grid_2x2">
+                <div class="section_title">{content.get('title', '')}</div>
+                <div class="grid_container">
+            """
+            for item in content.get("items", []):
+                html_content += f"""
+                    <div class="grid_item">
+                        <div class="item_title">✔ {item.get('title', '')}</div>
+                        <div class="item_desc">{item.get('desc', '')}</div>
+                    </div>
+                """
+            html_content += """
+                </div>
+            </div>
+            """
+            
+    html_content += "</body></html>"
+    
+    # WeasyPrint를 통한 컴파일 후 PDF/이미지 바이너리 반환
+    return HTML(string=html_content).write_pdf()
+
+# 3. 세션 상태 고도화 및 기본 가상 데이터베이스(JSON 데이터) 정의
+if "detail_json" not in st.session_state:
+    st.session_state["detail_json"] = {
+        "template_id": "bench_001",
+        "template_name": "쿠팡 상위 1% 슬라이딩 정리함 구조",
+        "blocks": [
+            {
+                "id": "block_1",
+                "type": "header_hero",
+                "content": {
+                    "sub_title": "공간의 가치를 바꾸는 단 하나의 선택",
+                    "main_title": "[당일출고] 루시아이 스택 슬라이딩 팬트리 정리함"
+                }
+            },
+            {
+                "id": "block_2",
+                "type": "pain_point",
+                "content": {
+                    "title": "아직도 깊숙한 싱크대 하부장에 물건을 무조건 쌓아두기만 하십니까?",
+                    "quote": "안쪽 물건 한번 꺼내려다가 위에 쌓인 가구들이 다 쏟아져 내렸어요..."
+                }
+            },
+            {
+                "id": "block_3",
+                "type": "feature_grid_2x2",
+                "content": {
+                    "title": "생활의 질을 높이는 루시아이만의 2대 핵심 혁신",
+                    "items": [
+                        {"title": "볼베어링 내장식 프리미엄 레일 슬라이딩", "desc": "손가락 하나로도 스르륵, 안쪽 깊숙이 숨어있는 무거운 냄비까지 부드럽고 안전하게 꺼낼 수 있습니다."},
+                        {"title": "흔들림 없는 고하중 모듈러 스택 시스템", "desc": "상하단 적층 결합 홈 설계로 다단으로 높이 쌓아도 쓰러지거나 휘어짐 없이 완벽하게 데드스페이스를 제거합니다."}
+                    ]
+                }
+            }
+        ]
     }
-    div.block-container {
-        padding-top: 2rem;
-    }
-    </style>
-""", unsafe_allow_html=True)
 
-# 세션 상태 초기화
-if "page3_saved_images" not in st.session_state:
-    st.session_state["page3_saved_images"] = []
-if "page3_meta_data" not in st.session_state:
-    st.session_state["page3_meta_data"] = {}
+# 4. 메인 대시보드 UI 설계
+st.title("🎯 쿠팡형 차세대 AI 상세페이지 엔진 v22.0")
+st.caption("고정 좌표 방식(PIL)을 폐기하고, 확장 가능한 [JSON 구조화 데이터 ➔ HTML 컴포넌트 ➔ 고화질 렌더러] 아키텍처를 채택했습니다.")
+st.markdown("---")
 
-@st.cache_data
-def load_korean_font():
-    """웹에서 폰트를 다운로드하여 안전하게 파일로 임시 저장합니다 (OSError 방지)"""
-    font_filename = "NanumGothic-Bold.ttf"
+col_edit, col_preview = st.columns([1, 1])
+
+# =========================================================================
+# 🛠️ [모듈 3. 데이터 매핑 & 편집 UI 영역] - 왼쪽 화면
+# =========================================================================
+with col_edit:
+    st.header("📝 3단계: 내 상품 정보 및 카피라이팅 편집")
+    st.write("벤치마킹 데이터(JSON) 구조에 맞춰 텍스트 데이터를 즉시 수정 및 매핑합니다.")
     
-    # 이미 다운로드 받은 파일이 있다면 해당 경로 반환
-    if os.path.exists(font_filename):
-        return font_filename
+    # 세션에 기록된 JSON 객체를 참조하여 폼 필드 동적 바인딩
+    updated_blocks = []
+    
+    for idx, block in enumerate(st.session_state["detail_json"]["blocks"]):
+        b_type = block["type"]
+        b_id = block["id"]
+        
+        with st.expander(f"📦 블록 {idx+1} : {b_type.upper()} 레이아웃 컴포넌트", expanded=True):
+            if b_type == "header_hero":
+                sub_t = st.text_input(f"상단 감성 서브타이틀 ({b_id})", value=block["content"]["sub_title"])
+                main_t = st.text_area(f"메인 셀링 상품명 ({b_id})", value=block["content"]["main_title"])
+                updated_blocks.append({
+                    "id": b_id, "type": b_type, 
+                    "content": {"sub_title": sub_t, "main_title": main_t}
+                })
+                
+            elif b_type == "pain_point":
+                p_title = st.text_area(f"고객 문제 제기 헤드라인 ({b_id})", value=block["content"]["title"])
+                p_quote = st.text_input(f"리얼 고객 인용구 ({b_id})", value=block["content"]["quote"])
+                updated_blocks.append({
+                    "id": b_id, "type": b_type, 
+                    "content": {"title": p_title, "quote": p_quote}
+                })
+                
+            elif b_type == "feature_grid_2x2":
+                g_title = st.text_input(f"기능 블록 대타이틀 ({b_id})", value=block["content"]["title"])
+                items = []
+                for j, item in enumerate(block["content"]["items"]):
+                    st.markdown(f"**🔹 기능 포인트 0{j+1}**")
+                    i_title = st.text_input(f"특징 제목 {j+1}", value=item["title"], key=f"it_{b_id}_{j}")
+                    i_desc = st.text_area(f"특징 상세 설명 {j+1}", value=item["desc"], key=f"id_{b_id}_{j}")
+                    items.append({"title": i_title, "desc": i_desc})
+                updated_blocks.append({
+                    "id": b_id, "type": b_type, 
+                    "content": {"title": g_title, "items": items}
+                })
 
-    # 1차 시도: 구글 나눔고딕 웹 폰트 다운로드 및 파일 저장
-    url = "https://github.com/google/fonts/raw/main/ofl/nanumgothic/NanumGothic-Bold.ttf"
+    # 동기화 버튼 클릭 시 세션 스테이트 반영
+    if st.button("🔄 매핑 데이터 최종 동기화 및 적용"):
+        st.session_state["detail_json"]["blocks"] = updated_blocks
+        st.success("JSON 구조화 템플릿에 데이터가 성공적으로 매핑되었습니다!")
+
+    st.markdown("### 🗂️ 현재 세션 템플릿 데이터 구조화 상태 (JSON Schema)")
+    st.json(st.session_state["detail_json"])
+
+# =========================================================================
+# 🖼️ [모듈 4. 최종 고화질 렌더링 & 다운로드 영역] - 오른쪽 화면
+# =========================================================================
+with col_preview:
+    st.header("🖼️ 4단계: 쿠팡 가로 780px 정밀 프리뷰")
+    st.write("아래 화면은 HTML/CSS 컴포넌트로 완벽하게 구조화되어 렌더링된 실시간 미리보기입니다.")
+    
+    # 렌더링 가동
     try:
-        response = requests.get(url, timeout=5)
-        if response.status_code == 200:
-            with open(font_filename, "wb") as f:
-                f.write(response.content)
-            return font_filename
-    except Exception:
-        pass
-    
-    # 2차 시도: 운영체제별 로컬 한글 폰트 패스 탐색
-    system_fonts = [
-        "C:/Windows/Fonts/malgun.ttf",       # Windows
-        "C:/Windows/Fonts/malgunbd.ttf",     # Windows Bold
-        "/System/Library/Fonts/AppleSDGothicNeo.ttc", # MacOS
-        "/usr/share/fonts/truetype/nanum/NanumGothicBold.ttf" # Linux
-    ]
-    for font_path in system_fonts:
-        if os.path.exists(font_path):
-            return font_path
-            
-    return None
-
-# 2. 사이드바 UI
-st.sidebar.title("📋 필수 마케팅 정보")
-api_key = st.sidebar.text_input("Google API Key", type="password", help="Gemini API 키를 입력하세요.")
-product_name = st.sidebar.text_input(
-    "상품명", 
-    value="", 
-    placeholder="예: [당일출고] 빅사이즈! 루시아이 스택 슬라이딩 팬트리 정리함"
-)
-target_customer = st.sidebar.text_input(
-    "타겟 고객", 
-    value="", 
-    placeholder="예: 주방 수납공간이 부족한 주부, 펜트리 정리가 고민인 분"
-)
-
-menu = st.radio(
-    "",
-    [
-        "🎯 1. 상세페이지 자동 생성",
-        "➕ 2. 벤치마킹 데이터 등록",
-        "📂 3. 상세페이지 샘플 제작 및 검토"
-    ],
-    horizontal=True
-)
-
-# =========================================================================
-# 🔥 [핵심 기능] 쿠팡 상위 1% 벤치마킹 구조화 멀티 레이아웃 드로잉 엔진 (780x1000 고정)
-# =========================================================================
-def draw_benchmarked_coupang_page(step_num, title="", description="", prod_name=""):
-    width, height = 780, 1000
-    font_src = load_korean_font()
-    
-    # 폰트 로드 및 크기 세팅 (예외 처리 강화)
-    try:
-        if font_src:
-            font_xs = ImageFont.truetype(font_src, 14)
-            font_badge = ImageFont.truetype(font_src, 17)
-            font_body = ImageFont.truetype(font_src, 20)
-            font_sub_head = ImageFont.truetype(font_src, 25)
-            font_main_head = ImageFont.truetype(font_src, 32)
-            font_huge = ImageFont.truetype(font_src, 40)
-        else:
-            raise ValueError("Font not found")
-    except Exception:
-        font_xs = font_badge = font_body = font_sub_head = font_main_head = font_huge = ImageFont.load_default()
-
-    display_prod = prod_name if prod_name else "루시아이 스택 슬라이딩 팬트리 정리함"
-
-    # --- [BLOCK 1: 브랜드 인트로 및 프리미엄 히어로 페이지] ---
-    if step_num == 1:
-        image = Image.new("RGB", (width, height), color=(255, 255, 255))
-        draw = ImageDraw.Draw(image)
+        pdf_bytes = render_json_to_image(st.session_state["detail_json"])
         
-        draw.rectangle([0, 0, 780, 45], fill=(22, 28, 45))
-        draw.text((40, 12), "COUPANG JET-DELIVERY PREMIUM SELECTION", fill=(255, 215, 0), font=font_xs)
+        # 브라우저에 임베딩하여 사용자에게 화면 출력 시각화
+        base64_pdf = base64.b64encode(pdf_bytes).decode('utf-8')
+        pdf_display = f'<iframe src="data:application/pdf;base64,{base64_pdf}" width="100%" height="900px" style="border:1px solid #cbd5e1; border-radius:8px;"></iframe>'
         
-        draw.text((70, 100), "PREMIUM HOUSEHOLD SOLUTIONS", fill=(0, 102, 255), font=font_badge)
-        draw.text((70, 135), "공간의 가치를 바꾸는 단 하나의 선택", fill=(110, 115, 125), font=font_sub_head)
+        st.markdown(pdf_display, unsafe_allow_html=True)
         
-        wrapped_lines = textwrap.wrap(display_prod, width=14)
-        y_offset = 180
-        for line in wrapped_lines:
-            draw.text((70, y_offset), line, fill=(20, 24, 35), font=font_huge)
-            y_offset += 48
+        st.markdown("---")
+        st.subheader("💾 최종 고화질 마스터 파일 다운로드 센터")
         
-        draw.rectangle([60, 320, 720, 850], fill=(245, 247, 250), outline=(225, 228, 232), width=2)
-        draw.text((210, 570), "📸 [여기에 메인 썸네일 제품 사진]", fill=(120, 125, 135), font=font_sub_head)
-        
-        draw.rounded_rectangle([60, 890, 720, 950], fill=(240, 244, 255), radius=5)
-        draw.text((90, 910), "💡 본 페이지는 쿠팡 공식 규격 가로 780px 정밀 매칭 템플릿입니다.", fill=(0, 80, 200), font=font_badge)
-
-    # --- [BLOCK 2: 문제 제기 고대비 반전 다크 배너] ---
-    elif step_num == 2:
-        image = Image.new("RGB", (width, height), color=(26, 28, 33))
-        draw = ImageDraw.Draw(image)
-        
-        draw.ellipse([365, 70, 415, 120], fill=(230, 45, 45))
-        draw.text((386, 78), "!", fill=(255, 255, 255), font=font_sub_head)
-        
-        draw.text((200, 170), "아직도 주방 싱크대 하부장과 팬트리에", fill=(180, 185, 195), font=font_sub_head)
-        draw.text((140, 215), "무조건 쌓아두기만 하십니까?", fill=(255, 255, 255), font=font_main_head)
-        
-        draw.rectangle([60, 300, 720, 720], fill=(45, 48, 55), outline=(70, 75, 85), width=1)
-        draw.text((220, 490), "[🚨 꺼내기 힘들고 무너지는 수납장 연출 사진]", fill=(160, 165, 175), font=font_body)
-        
-        draw.rounded_rectangle([60, 770, 720, 860], fill=(210, 35, 45), radius=8)
-        draw.text((150, 795), '“ 안쪽 물건 한 번 꺼내려다 다 쏟아지고 무너져요... ”', fill=(255, 255, 255), font=font_sub_head)
-        
-        draw.text((215, 910), "방치된 데드스페이스, 이제는 바뀌어야 합니다.", fill=(130, 135, 145), font=font_body)
-
-    # --- [BLOCK 3: 기능 강조형 레이아웃 - 레일 슬라이딩 모션] ---
-    elif step_num == 3:
-        image = Image.new("RGB", (width, height), color=(255, 255, 255))
-        draw = ImageDraw.Draw(image)
-        
-        draw.rectangle([50, 70, 55, 105], fill=(0, 102, 255))
-        draw.text((70, 75), "CORE FEATURE 01", fill=(0, 102, 255), font=font_badge)
-        
-        draw.text((60, 120), "손가락 하나로 스르륵-", fill=(20, 24, 35), font=font_sub_head)
-        draw.text((60, 160), "안쪽 깊숙한 물건까지 부러짐 없는 슬라이딩", fill=(20, 24, 35), font=font_main_head)
-        
-        draw.rectangle([60, 240, 720, 760], fill=(250, 252, 255), outline=(220, 226, 235), width=2)
-        draw.text((200, 480), "🎥 [슬라이딩 부드러운 작동 GIF 공간]", fill=(0, 90, 220), font=font_sub_head)
-        
-        draw.rounded_rectangle([60, 800, 720, 930], fill=(245, 247, 250), radius=5)
-        draw.text((90, 825), "✔ 하이테크 볼베어링 내장식 스레드 기술 도입", fill=(50, 55, 65), font=font_body)
-        draw.text((90, 870), "✔ 끝까지 당겨도 빠지지 않는 안전 스토퍼 장치 체결", fill=(50, 55, 65), font=font_body)
-
-    # --- [BLOCK 4: 입체적 공간 스택 적층 레이아웃] ---
-    elif step_num == 4:
-        image = Image.new("RGB", (width, height), color=(255, 255, 255))
-        draw = ImageDraw.Draw(image)
-        
-        draw.rectangle([50, 70, 55, 105], fill=(0, 102, 255))
-        draw.text((70, 75), "CORE FEATURE 02", fill=(0, 102, 255), font=font_badge)
-        
-        draw.text((60, 120), "위로 위로, 빈틈없이 수납 완성!", fill=(20, 24, 35), font=font_sub_head)
-        draw.text((60, 160), "무너지지 않는 견고한 모듈러 스택 시스템", fill=(20, 24, 35), font=font_main_head)
-        
-        draw.rectangle([60, 240, 720, 760], fill=(245, 248, 255), outline=(210, 220, 240), width=2)
-        draw.text((180, 480), "📦 [다단 적층으로 수납 효율 200% 극대화 연출 이미지]", fill=(0, 90, 220), font=font_body)
-        
-        draw.rounded_rectangle([60, 800, 720, 930], fill=(245, 247, 250), radius=5)
-        draw.text((90, 825), "✔ 상하단 결합 홈 설계로 흔들림 없는 완벽 적층 고정", fill=(50, 55, 65), font=font_body)
-        draw.text((90, 870), "✔ 고강도 고순도 PP 소재 채택으로 고하중도 휨 없이 지탱", fill=(50, 55, 65), font=font_body)
-
-    # --- [BLOCK 5: 내구성 및 고하중 테스트 검증] ---
-    elif step_num == 5:
-        image = Image.new("RGB", (width, height), color=(255, 255, 255))
-        draw = ImageDraw.Draw(image)
-        
-        draw.rectangle([50, 70, 55, 105], fill=(0, 102, 255))
-        draw.text((70, 75), "TRUST & QUALITY", fill=(0, 102, 255), font=font_badge)
-        draw.text((60, 120), "무거운 주방 가전도 끄떡없이", fill=(20, 24, 35), font=font_sub_head)
-        draw.text((60, 160), "변형이나 뒤틀림 없는 압도적 내구성 고하중 설계", fill=(20, 24, 35), font=font_main_head)
-        
-        draw.rectangle([60, 240, 720, 760], fill=(252, 250, 245), outline=(235, 225, 210), width=2)
-        draw.text((220, 480), "🏋️‍♂️ [생수병/무거운 냄비 적재 내구성 실험 사진]", fill=(140, 100, 50), font=font_body)
-        
-        draw.rounded_rectangle([60, 800, 720, 930], fill=(245, 247, 250), radius=5)
-        draw.text((90, 825), "✔ 자체 하중 테스트 성적서 획득 (안심 사용 기준 충족)", fill=(50, 55, 65), font=font_body)
-        draw.text((90, 870), "✔ 충격과 스크래치에 강한 세미매트 텍스처 마감 처리", fill=(50, 55, 65), font=font_body)
-
-    # --- [BLOCK 6: 다양한 공간 활용 시나리오 가이드] ---
-    elif step_num == 6:
-        image = Image.new("RGB", (width, height), color=(255, 255, 255))
-        draw = ImageDraw.Draw(image)
-        
-        draw.text((60, 80), "MULTI-USE SCENARIOS", fill=(0, 102, 255), font=font_badge)
-        draw.text((60, 120), "주방, 드레스룸, 다용도실까지 어디서나", fill=(20, 24, 35), font=font_main_head)
-        
-        # 2분할 레이아웃 공간 연출
-        draw.rectangle([60, 200, 380, 650], fill=(245, 245, 245), outline=(220, 220, 220))
-        draw.text((120, 410), "🍳 [싱크대 하부장 수납]", fill=(100, 100, 100), font=font_badge)
-        
-        draw.rectangle([400, 200, 720, 650], fill=(245, 245, 245), outline=(220, 220, 220))
-        draw.text((160, 410), "🥫 [팬트리 식자재 정리]", fill=(100, 100, 100), font=font_badge)
-        
-        draw.rounded_rectangle([60, 700, 720, 930], fill=(240, 245, 240), radius=5)
-        draw.text((90, 740), "💡 스타일링 가이드 : 인테리어를 해치지 않는 모던 화이트 톤으로", fill=(40, 80, 40), font=font_body)
-        draw.text((90, 785), "어떤 가구와 배치해도 이질감 없이 자연스럽게 녹아듭니다.", fill=(40, 80, 40), font=font_body)
-
-    # --- [BLOCK 7: 정밀 규격 및 상세 스펙] ---
-    elif step_num == 7:
-        image = Image.new("RGB", (width, height), color=(255, 255, 255))
-        draw = ImageDraw.Draw(image)
-        
-        draw.text((60, 80), "SIZE & SPECIFICATION", fill=(100, 105, 115), font=font_badge)
-        draw.text((60, 120), "제품 상세 사이즈를 확인하세요", fill=(20, 24, 35), font=font_main_head)
-        
-        draw.rectangle([60, 200, 720, 600], fill=(250, 250, 250), outline=(230, 230, 230))
-        draw.text((250, 380), "📐 [정면/측면 입체 실측 가이드 도면]", fill=(120, 125, 135), font=font_body)
-        
-        # 스펙 테이블 가이드 라인
-        draw.line([(60, 660), (720, 660)], fill=(200, 200, 200), width=2)
-        draw.text((80, 690), "제 품 명", fill=(100, 100, 100), font=font_body)
-        draw.text((240, 690), display_prod, fill=(30, 30, 30), font=font_body)
-        
-        draw.line([(60, 740), (720, 740)], fill=(230, 230, 230), width=1)
-        draw.text((80, 770), "소     재", fill=(100, 100, 100), font=font_body)
-        draw.text((240, 770), "최고급 고순도 PP (Polypropylene), 스틸 합금 레일", fill=(30, 30, 30), font=font_body)
-        
-        draw.line([(60, 820), (720, 820)], fill=(230, 230, 230), width=1)
-        draw.text((80, 850), "제 조 국", fill=(100, 100, 100), font=font_body)
-        draw.text((240, 850), "대한민국 (Premium 자체 공정 제조)", fill=(30, 30, 30), font=font_body)
-        draw.line([(60, 900), (720, 900)], fill=(200, 200, 200), width=2)
-
-    # --- [BLOCK 8: 마지막 구매 촉구 및 CTA 배너] ---
-    elif step_num == 8:
-        image = Image.new("RGB", (width, height), color=(22, 28, 45))
-        draw = ImageDraw.Draw(image)
-        
-        draw.text((270, 180), "OUR BRAND COMMITMENT", fill=(255, 215, 0), font=font_badge)
-        draw.text((150, 240), "고민은 배송을 늦출 뿐입니다.", fill=(255, 255, 255), font=font_sub_head)
-        
-        # 타이틀 줄바꿈 가이드
-        draw.text((100, 310), "지금 바로 주방의 격을 바꾸고", fill=(255, 255, 255), font=font_main_head)
-        draw.text((100, 360), "수납 스트레스에서 완벽히 해방되세요!", fill=(255, 255, 255), font=font_main_head)
-        
-        draw.rectangle([100, 480, 680, 750], fill=(35, 43, 64), outline=(50, 60, 85))
-        draw.text((190, 590), "🚚 [쿠팡 제트배송/로켓배송 당일출고 심볼 배치]", fill=(170, 185, 220), font=font_body)
-        
-        draw.rounded_rectangle([100, 820, 680, 900], fill=(0, 102, 255), radius=5)
-        draw.text((235, 842), "🛒 쿠팡에서 바로 구매하기", fill=(255, 255, 255), font=font_sub_head)
-
-    else:
-        # 1~8 규격을 벗어난 예외 탐색 보호 캔버스
-        image = Image.new("RGB", (width, height), color=(255, 255, 255))
-        draw = ImageDraw.Draw(image)
-        draw.text((250, 480), "준비 중인 블록입니다.", fill=(0, 0, 0), font=font_sub_head)
-        
-    return image
-
-# =========================================================================
-# 🏗️ 비즈니스 로직 연동 핸들러
-# =========================================================================
-def build_and_store_cards():
-    cards = []
-    # 상위 1% 8단계 전체 파트를 끊김 없이 자동 렌더링하도록 안전 바인딩
-    for step_idx in range(1, 9):
-        generated_img = draw_benchmarked_coupang_page(step_idx, "", "", product_name)
-        cards.append(generated_img)
-    st.session_state["page3_saved_images"] = cards
-
-# =========================================================================
-# 🎛️ Streamlit 메뉴 페이지 라우팅
-# =========================================================================
-if menu == "🎯 1. 상세페이지 자동 생성":
-    st.header("🎯 AI 상세페이지 기획서 및 구조 자동 생성")
-    st.write("상세페이지에 기입할 핵심 셀링 포인트 카피라이팅을 도출합니다.")
-    
-    if st.button("✨ 마케팅 기획안 생성 시작"):
-        if not product_name:
-            st.warning("사이드바에 상품명을 입력해주세요.")
-        else:
-            build_and_store_cards()
-            st.success(f"'{product_name}' 전용 쿠팡 맞춤형 기획 구조가 8단계 캔버스로 완벽 매칭되었습니다! 3번 메뉴로 이동하여 캔버스를 확인하세요.")
-
-elif menu == "➕ 2. 벤치마킹 데이터 등록":
-    st.header("➕ 경쟁사 링크 구조 연산 분석 및 벤치마킹 대조")
-    url_input = st.text_input("분석할 쿠팡 또는 스마트스토어 상품 주소(URL)를 입력하세요:", placeholder="https://www.coupang.com/vp/products/...")
-    
-    if st.button("레이아웃 프레임워크 동적 추출 및 빌드"):
-        if url_input:
-            with st.spinner("API 분석 생각과 상위 1% 마케팅 카드가 내장되도록 780px 정밀 규격으로 조율 중..."):
-                build_and_store_cards()
-                st.success("🎉 타겟 상세페이지 흐름 완전 분석 성공! 3번 메뉴에 자동 동기화되었습니다.")
-        else:
-            st.warning("분석할 상품 URL을 입력해주세요.")
-
-elif menu == "📂 3. 상세페이지 샘플 제작 및 검토":
-    st.header("📂 쿠팡 규격(가로 780px) 상세페이지 실물 이미지 다운로드 센터")
-    st.write("각 단계별로 완성된 실물 이미지 카드를 눈으로 직접 확인하고 바로 다운로드하세요!")
-    
-    if st.button("🔄 전체 캔버스 새로고침 렌더링"):
-        build_and_store_cards()
-        
-    st.markdown("---")
-    
-    # 세션에 저장된 이미지가 없다면 최초 1회 로드
-    if not st.session_state["page3_saved_images"]:
-        build_and_store_cards()
-        
-    # 안전하게 최신 container API를 사용하여 그리드 및 리스트 표출
-    with st.container():
-        for idx, img in enumerate(st.session_state["page3_saved_images"]):
-            step_num = idx + 1
-            st.subheader(f"📦 PAGE {step_num} : 실시간 레이아웃 미리보기")
-            
-            # 실시간 이미지 렌더링 출력
-            st.image(img, caption=f"쿠팡 규격 매칭 블록-{step_num} (780 x 1000 px)", use_container_width=False)
-            
-            # 개별 이미지 다운로드 버튼 구현
-            buf = io.BytesIO()
-            img.save(buf, format="PNG")
-            byte_im = buf.getvalue()
-            st.download_button(
-                label=f"💾 PAGE {step_num} 이미지 다운로드",
-                data=byte_im,
-                file_name=f"coupang_page_block_{step_num}.png",
-                mime="image/png"
-            )
-            st.markdown("---")
+        st.download_button(
+            label="🚀 쿠팡 등록용 고화질 원본 파일 다운로드",
+            data=pdf_bytes,
+            file_name=f"coupang_master_page_{datetime.now().strftime('%Y%m%d')}.pdf",
+            mime="application/pdf",
+            use_container_width=True
+        )
+    except Exception as e:
+        st.error(f"렌더링 엔진 내부 컴파일 에러: {e}")
+        st.info("Tip: 백엔드 환경에 `weasyprint` 라이브러리가 올바르게 구성되었는지 확인하십시오.")
