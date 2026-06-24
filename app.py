@@ -1,27 +1,14 @@
-import sys
-import subprocess
-
-# =================================================================
-# 📦 [필수 도구 자동 설치] bs4와 requests가 없으면 서버가 알아서 설치합니다.
-# =================================================================
-try:
-    import requests
-    from bs4 import BeautifulSoup
-except ModuleNotFoundError:
-    # 스트림릿 서버 환경에 크롤링 필수 패키지 강제 주입
-    subprocess.check_call([sys.executable, "-m", "pip", "install", "beautifulsoup4", "requests"])
-    import requests
-    from bs4 import BeautifulSoup
-
 import streamlit as st
 import json
+import requests
 import io
+from bs4 import BeautifulSoup
 from PIL import Image, ImageDraw, ImageFont
 
 # =================================================================
 # ⚙️ [초기 설정 및 레이아웃 선언]
 # =================================================================
-st.set_page_config(page_title="쿠팡형 AI 상세페이지 마스터 v2.7", layout="wide")
+st.set_page_config(page_title="쿠팡형 AI 상세페이지 마스터 v2.8", layout="wide")
 
 # OS별 안전한 폰트 로더
 def get_safe_font(font_size=20):
@@ -163,7 +150,7 @@ with tab3:
     st.session_state["p4_title"] = st.text_input("4페이지 실물 연출 정보 타이틀 변경", st.session_state["p4_title"])
 
 # -----------------------------------------------------------------
-# [PAGE 4] 서버에서 절대 안 튕기는 고화질 PIL 이미지 빌드 및 다운로드 센터
+# [PAGE 4] 고화질 PIL 이미지 빌드 및 다운로드 센터
 # -----------------------------------------------------------------
 with tab4:
     st.markdown("### 💾 PAGE 4 : 쿠팡 규격(가로 780px) 이미지 다운로드 센터")
@@ -215,4 +202,5 @@ with tab4:
             st.image(canvas, caption="실제 컴파일 완료된 가로 780px 통이미지 원본 스냅샷", use_container_width=True)
 
 if __name__ == "__main__":
-    main()
+    # 메인 함수 실행 구조 보완
+    pass
