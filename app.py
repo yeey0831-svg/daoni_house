@@ -2,6 +2,7 @@ import asyncio
 import os
 import subprocess
 import streamlit as st
+import streamlit.components.v1 as components  # 실시간 HTML 프리뷰를 위한 모듈 추가
 from playwright.async_api import async_playwright
 
 # =================================================================
@@ -119,8 +120,8 @@ def compile_to_html(template_data):
         <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700;900&display=swap" rel="stylesheet">
         <style>body {{ font-family: 'Noto Sans KR', sans-serif; }}</style>
     </head>
-    <body class="bg-gray-800 flex justify-center items-start min-h-screen m-0 p-0">
-        <div id="coupang-canvas" class="w-[780px] bg-white shadow-2xl overflow-hidden">
+    <body class="bg-gray-100 flex justify-center items-start min-h-screen m-0 p-0">
+        <div id="coupang-canvas" class="w-[780px] bg-white shadow-md overflow-hidden">
             {html_content}
         </div>
     </body>
@@ -136,11 +137,10 @@ async def render_image(html_str, output_path):
     async with async_playwright() as p:
         browser = await p.chromium.launch(headless=True)
         page = await browser.new_page()
-        # 세로 길이는 전체 컴포넌트가 다 나오도록 여유 있게 설정
         await page.set_viewport_size({"width": 780, "height": 3000})
         await page.set_content(html_str)
         
-        # 웹용 이미지가 렌더링 캔버스에 완전히 로드될 때까지 2.5초 대기
+        # 외부 이미지가 로드될 때까지 대기
         await page.wait_for_timeout(2500) 
         
         element = await page.query_selector("#coupang-canvas")
@@ -153,49 +153,59 @@ async def render_image(html_str, output_path):
 # [Streamlit WEB UI] 마스터 저장소 선택 및 웹 다운로드 인터페이스
 # =================================================================
 def main():
-    st.set_page_config(page_title="쿠팡형 AI 상세페이지 마스터 v2.5", layout="centered")
+    st.set_page_config(page_title="쿠팡형 AI 상세페이지 마스터 v2.5", layout="wide")
     
     st.title("📦 쿠팡 상세페이지 자동화 시스템 v2")
     st.subheader("마스터 저장소 연동 및 고화질 통이미지 컴파일러")
     st.write("저장소에 보관된 기획 레이아웃을 불러와 쿠팡 공식 규격(가로 780px) 이미지로 굽습니다.")
     st.markdown("---")
     
-    # 1. 템플릿 선택 UI (기존 CLI input 우회)
-    template_options = {MASTER_REPOSITORY[k]["title"]: k for k in MASTER_REPOSITORY.keys()}
-    selected_title = st.selectbox("🔮 마스터 저장소에서 불러올 템플릿을 선택하세요:", list(template_options.keys()))
+    # 레이아웃을 왼쪽(설정 및 빌드)과 오른쪽(실시간 마스터 프리뷰)으로 분할
+    col1, col2 = st.columns([1, 1.2])
     
-    selected_key = template_options[selected_title]
-    selected_template = MASTER_REPOSITORY[selected_key]
-    output_filename = f"{selected_key}_result.png"
-    
-    # 템플릿 상세 설명 표시
-    st.info(f"**선택된 템플릿 요약:** {selected_template['description']}")
-    
-    # 2. 이미지 빌드 버튼
-    if st.button("🔥 완성형 상세페이지 8장 그룹화 및 마스터 이미지 빌드"):
-        with st.spinner("플레이라이트 브라우저 엔진 구동 중... 약 3~5초 정도 소요됩니다."):
-            # HTML 컴파일
-            compiled_html = compile_to_html(selected_template)
-            # 비동기 이미지 크롤러 엔진 작동
-            asyncio.run(render_image(compiled_html, output_filename))
-            
-        # 3. 결과 확인 및 다운로드 창구 개설
-        if os.path.exists(output_filename):
-            st.success("🎉 쿠팡 규격 통상세페이지 이미지 변환에 성공했습니다!")
-            
-            # 생성된 이미지 파일 웹 화면에 즉시 피드백
-            st.image(output_filename, caption="최종 렌더링 결과물 (가로 780px 정밀 매칭)", use_container_width=True)
-            
-            # 실물 파일 로컬 다운로드 다운로드 버튼 추가
-            with open(output_filename, "rb") as file:
-                st.download_button(
-                    label="💾 고화질 실물 통이미지 다운로드 (.png)",
-                    data=file,
-                    file_name=output_filename,
-                    mime="image/png"
-                )
-        else:
-            st.error("❌ 이미지 파일 렌더링에 실패했습니다. 캔버스 영역 설정을 확인하세요.")
+    with col1:
+        st.markdown("### 🛠️ 제어 센터")
+        # 1. 템플릿 선택 UI
+        template_options = {MASTER_REPOSITORY[k]["title"]: k for k in MASTER_REPOSITORY.keys()}
+        selected_title = st.selectbox("🔮 마스터 저장소에서 불러올 템플릿을 선택하세요:", list(template_options.keys()))
+        
+        selected_key = template_options[selected_title]
+        selected_template = MASTER_REPOSITORY[selected_key]
+        output_filename = f"{selected_key}_result.png"
+        
+        # 템플릿 상세 설명 표시
+        st.info(f"**선택된 템플릿 요약:**\n{selected_template['description']}")
+        
+        st.markdown("---")
+        
+        # 2. 이미지 빌드 버튼
+        if st.button("🔥 완성형 상세페이지 그룹화 및 마스터 이미지 빌드"):
+            with st.spinner("플레이라이트 브라우저 엔진 구동 중... 약 3~5초 정도 소요됩니다."):
+                compiled_html = compile_to_html(selected_template)
+                asyncio.run(render_image(compiled_html, output_filename))
+                
+            # 3. 결과 확인 및 다운로드 창구 개설
+            if os.path.exists(output_filename):
+                st.success("🎉 쿠팡 규격 통상세페이지 이미지 변환에 성공했습니다!")
+                
+                with open(output_filename, "rb") as file:
+                    st.download_button(
+                        label="💾 고화질 실물 통이미지 다운로드 (.png)",
+                        data=file,
+                        file_name=output_filename,
+                        mime="image/png"
+                    )
+                st.image(output_filename, caption="최종 빌드된 이미지 원본 크롭본", use_container_width=True)
+            else:
+                st.error("❌ 이미지 파일 렌더링에 실패했습니다.")
+
+    with col2:
+        st.markdown("### 🔮 쿠팡 가로 780px 실시간 마스터 프리뷰")
+        # 드롭다운 선택에 따라 실시간으로 HTML을 조립하여 화면에 뿌려줍니다.
+        current_html = compile_to_html(selected_template)
+        
+        # 스트림릿 화면 내에 1페이지~4페이지가 780px 규격으로 즉시 렌더링됩니다.
+        components.html(current_html, height=900, scrolling=True)
 
 if __name__ == "__main__":
     main()
