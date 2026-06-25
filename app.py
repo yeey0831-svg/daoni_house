@@ -1,181 +1,209 @@
 import streamlit as st
 
-# 1. 페이지 레이아웃 및 스타일 정의
-st.set_page_config(layout="wide", page_title="다오니하우스 쿠팡 마스터 스튜디오")
+# 1. 페이지 레이아웃 및 780px 세로형 상세페이지 전용 CSS 설정
+st.set_page_config(layout="wide", page_title="다온이네 하우스 마스터 스튜디오")
 
-# 780px 고정 폭 스크롤 도화지 스타일 적용
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap');
+    
     html, body, [class*="css"] {
         font-family: 'Noto Sans KR', sans-serif;
+        background-color: #f8f9fa;
     }
-    /* 쿠팡 정품 규격 가로 780px 시뮬레이션 컨테이너 */
-    .coupang-wrapper {
-        max-width: 780px;
-        margin: 0 auto;
+    
+    /* 🔴 PPT처럼 늘어나는 버그 해결: 쿠팡 공식 규격 780px 고정 스크롤 도화지 */
+    .detail-container {
+        width: 780px !important;
+        max-width: 780px !important;
+        margin: 0 auto !important;
         background-color: #ffffff;
-        border: 1px solid #e3e3e3;
-        box-shadow: 0px 10px 30px rgba(0,0,0,0.08);
+        border: 1px solid #e1e4e6;
+        box-shadow: 0px 8px 32px rgba(0, 0, 0, 0.08);
+        padding: 0px !important;
+    }
+    
+    /* 섹션 간 경계 및 간격 제어 */
+    .page-section {
+        width: 100%;
+        box-sizing: border-box;
+        padding: 60px 50px;
+        background-color: #ffffff;
+        border-bottom: 8px solid #f1f3f5;
+    }
+    
+    /* 레퍼런스 스타일의 딥블루 하이라이트 배너 */
+    .blue-banner {
+        background-color: #102a43;
+        color: #ffffff;
+        padding: 40px;
+        text-align: center;
+        border-radius: 4px;
+        margin-bottom: 30px;
+    }
+    
+    /* 포인트 번호 스타일 */
+    .point-badge {
+        background-color: #004494;
+        color: white;
+        padding: 4px 12px;
+        font-size: 14px;
+        font-weight: 700;
+        border-radius: 20px;
+        display: inline-block;
+        margin-bottom: 15px;
     }
     </style>
     """, unsafe_allow_html=True)
 
-# 2. 세션 상태 관리 (버튼 실행 트리거)
-if "build_done" not in st.session_state:
-    st.session_state.build_done = False
+# 2. 실행 상태 관리를 위한 세션 초기화
+if "build_complete" not in st.session_state:
+    st.session_state.build_complete = False
 
-# 3. 20년 차 기획자의 맞춤형 동적 카피라이팅 및 프롬프트 생성 엔진
-def generate_custom_copy(name, desc):
-    # 입력단어 기반 기본 키워드 방어 로직 (없을 경우 기본값 세팅)
-    short_name = name.split()[0] if name else "추천 상품"
-    if "자석" in name or "자석" in desc:
-        core_feature = "착! 붙여서 보관하는 강력 자석 설계"
-        pain_point = "매번 쓰고 나면 사라지는 일반 집게, 찾느라 스트레스 받으셨죠?"
-        detail_tech = "냉장고, 자석 타판 어디든 착! 분실 걱정 없는 스마트 리빙"
-    else:
-        core_feature = "공간의 가치를 바꾸는 압도적 밀폐력"
-        pain_point = "금방 눅눅해지고 상하는 식재료 보관 문제"
-        detail_tech = "공기와 습기를 완벽하게 차단하는 초밀착 구조"
-
-    # 780px 매칭형 프리미엄 리빙/주방 연출 이미지 플레이스홀더
+# 3. 20년 차 기획자의 자석밀봉집게 맞춤형 8단계 상세페이지 기획안 정의
+def get_magnetic_clip_spec(name, info):
     return [
         {
-            "step": "01. 오프닝 프리미엄 헤더",
-            "title": f"주방의 분위기를 바꾸는 감성 스펙\n✨ {short_name}",
-            "sub": f"정리의 시작은 장비부터. 다오니하우스가 선보이는 역대급 프리미엄 라인업.",
-            "img": "https://images.unsplash.com/photo-1556911220-e15b29be8c8f?w=780&q=80", # 주방 스튜디오 컷
-            "prompt": f"High-end editorial commercial product photography of {short_name}, arranged beautifully on a modern aesthetic kitchen counter, soft natural morning light, cinematic, photorealistic 8k --ar 4:5"
+            "step": "01. 오프닝 메인 비주얼",
+            "badge": "LAUNCHING",
+            "title": "주방의 모든 밀봉을 스타일리시하게\n🌈 다온이네 하우스 멀티 자석집게",
+            "sub": "남은 과자부터 식빵, 캠핑 소스까지 빈틈없이 꽉! 붙여서 보관하는 스마트 리빙 공식을 만나보세요.",
+            "img_url": "https://images.unsplash.com/photo-1596797038530-2c107229654b?w=780&q=80", # 주방 소품/집게 무드
+            "prompt": "Premium commercial studio setup of 7 different pastel colored magnetic sealing clips, neatly holding organized food snack pouches on a clean modern kitchen counter, crisp details, 8k, architectural lighting --ar 4:5"
         },
         {
             "step": "02. 고질적 불편함 자극 (Pain Point)",
-            "title": f"{pain_point}\n대충 묶어둔 봉지 속 눅눅해지는 식감...",
-            "sub": "밀봉되지 않은 식재료는 세균 번식과 품질 저하의 원인이 됩니다.",
-            "img": "https://images.unsplash.com/photo-1584622650111-993a426fbf0a?w=780&q=80", # 흐트러진 주방/소품 컷
-            "prompt": f"A realistic messy kitchen pantry filled with opened, unsealed snack bags and messy items, frustrating atmosphere, dramatic realistic lighting --ar 4:5"
+            "badge": "CHECK POINT",
+            "title": "매번 쓰고 나면 사라지는 집게,\n대충 묶어 눅눅해진 식감에 스트레스 받으셨죠?",
+            "sub": "어디 뒀는지 기억 안 나는 소품들과 밀봉되지 않아 버려지는 식재료, 이제 완벽하게 차단할 때입니다.",
+            "img_url": "https://images.unsplash.com/photo-1584622650111-993a426fbf0a?w=780&q=80", # 어질러진 주방
+            "prompt": "A realistic chaotic kitchen pantry with open stale snack bags, messy unorganized drawers, frustrated household atmosphere, professional photography --ar 4:5"
         },
         {
-            "step": "03. 감성 해답 제시 (Solution)",
-            "title": "선명하고 아름다운 7가지 컬러로\n깔끔하게 접고, 빈틈없이 밀봉 완료!",
-            "sub": "비우고 정돈하는 순간, 복잡했던 일상에 완벽한 칼각 질서가 찾아옵니다.",
-            "img": "https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?w=780&q=80", # 깔끔 정돈된 리빙룸/주방 컷
-            "prompt": f"Extremely organized modern kitchen cabinet, beautifully sorted with colorful minimalist design clips, neat design, bright airy atmosphere, architectural digest style --ar 4:5"
+            "step": "03. 감성적 솔루션 제안 (Solution)",
+            "badge": "SOLUTION",
+            "title": "공간을 바꾸는 단 하나의 선택\n접고, 집고, 붙이면 주방 정리 끝!",
+            "sub": "다온이네 하우스가 제안하는 7가지 감성 컬러 웨이로 복잡했던 주방에 완벽한 칼각 질서가 시작됩니다.",
+            "img_url": "https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?w=780&q=80", # 깔끔 정돈된 수납
+            "prompt": "Beautifully minimalist organized modern white kitchen, interior styling showing functional elegance, lifestyle layout, warm morning sun rays --ar 4:5"
         },
         {
-            "step": "04. 압도적 핵심 기술력 (Spec)",
-            "title": f"어디서나 간편하게 툭-\n{core_feature}",
-            "sub": "쉽게 떨어지지 않는 강력 자석 내장으로 메모 거치부터 인테리어 효과까지 자석 하나로 종결.",
-            "img": "https://images.unsplash.com/photo-1600585154526-990dced4db0d?w=780&q=80", # 정밀 테스쳐 줌인 컷
-            "prompt": f"Macro close-up shot of a sleek modern magnetic clip attached to a clean metallic surface, showcasing high-quality material finish and strong hold, studio lighting --ar 4:5"
+            "step": "04. 압도적 핵심 가치 01 (자석 기능)",
+            "badge": "POINT 01",
+            "title": "잃어버릴 걱정 제로!\n붙여놓고 툭- 꺼내 쓰는 초강력 마그네틱",
+            "sub": "후면에 내장된 네오디움 자석으로 냉장고, 조리대, 자석 보드판 어디든 착! 붙여 보관하고 간편하게 찾으세요.",
+            "img_url": "https://images.unsplash.com/photo-1556911220-e15b29be8c8f?w=780&q=80", # 냉장고/철제 부착 무드
+            "prompt": "Extreme macro close-up of a sleek minimal magnetic clip firmly attached to a clean white refrigerator door surface, holding a beautiful postcard, soft luxury shadow, professional commercial catalog --ar 4:5"
         },
         {
-            "step": "05. 리얼 사용 시나리오 (Lifestyle)",
-            "title": "과자 봉지부터 식빵, 캠핑장 소스 보관까지\n생활 전반을 아우르는 완벽한 다용도성",
-            "sub": "주방을 넘어 일상의 모든 밀폐가 필요한 순간 가장 먼저 손이 가게 됩니다.",
-            "img": "https://images.unsplash.com/photo-1528740561666-bd2479da0845?w=780&q=80", # 일상 감성 주방 활용 컷
-            "prompt": f"A person's hand neatly sealing a bread bag using a stylish minimal clip in a warm bright cozy apartment kitchen, lifestyle commercial photography --ar 4:5"
+            "step": "05. 압도적 핵심 가치 02 (밀봉/활용성)",
+            "badge": "POINT 02",
+            "title": "공기 차단 100% 밀폐 스펙\n식빵부터 캠핑장 소스까지 올인원 케어",
+            "sub": "강력한 스프링 장력과 내부 논슬립 패드가 흐르는 소스나 밀가루 봉지까지 단 1mm의 틈새도 없이 꽉 잡아줍니다.",
+            "img_url": "https://images.unsplash.com/photo-1528740561666-bd2479da0845?w=780&q=80", # 실사용 라이프스타일
+            "prompt": "A close up look of a person's hands sealing a fresh loaf of bread neatly with a stylish pastel-colored grip clip, warm atmospheric lighting, cinematic interior style --ar 4:5"
         },
         {
-            "step": "06. 마감 및 디테일 체크 (Zoom-in)",
-            "title": "1mm의 틈새도 허용하지 않는\n강력한 고정력과 라운딩 마감",
-            "sub": "손이 자주 닿는 제품이기에 상처 없이 안전하도록 모서리 전체 유선형 안전 설계.",
-            "img": "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=780&q=80", # 전문 스튜디오 대칭 컷
-            "prompt": f"Crisp professional studio product display of minimal design clips, isolated clean background, soft elegant shadows, commercial catalog design --ar 4:5"
+            "step": "06. 마감 퀄리티 체크 (Zoom-in)",
+            "badge": "DETAIL CHECK",
+            "title": "손끝이 안전한 라운딩 마감 공정\n오래도록 변함없는 견고한 내구성",
+            "sub": "매일 수십 번 열고 닫는 제품이기에 상처를 주지 않는 안전한 곡선 설계와 유광 고급 ABS 소재를 채택했습니다.",
+            "img_url": "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=780&q=80", # 스튜디오 대칭 컷
+            "prompt": "Frontal product shot of seven premium plastic sealing clips displayed symmetrically, smooth round corners, studio product lighting, highly detailed surface texture --ar 4:5"
         },
         {
-            "step": "07. 독점 패키지 구성 & 증정 혜택",
-            "title": "오직 다오니하우스 단독 특가\n6세트 구매 시 1장 더 (+1) 특별 증정",
-            "sub": "가장 실용적인 구성에 특별 보너스까지 챙겨 드리는 한정 수량 기획전입니다.",
-            "img": "https://images.unsplash.com/photo-1549465220-1a8b9238cd48?w=780&q=80", # 선물상자 패키지 컷
-            "prompt": f"Beautiful aesthetic gift box packaging layout with colorful interior items, top-down flatlay angle, pastel background, premium brand presentation --ar 4:5"
+            "step": "07. 독점 패키지 및 구매 혜택",
+            "badge": "SPECIAL GIFT",
+            "title": "오직 다온이네 하우스 고객 단독 특가\n6세트 구매 시 1개 더! (+1) 특별 증정",
+            "sub": "가장 활용도가 높은 패키지 구성에 보너스 혜택까지 더했습니다. 한정 수량 소진 전 지금 선택하세요.",
+            "img_url": "https://images.unsplash.com/photo-1549465220-1a8b9238cd48?w=780&q=80", # 선물상자/패키지
+            "prompt": "Top-down flatlay shot of a modern clean box packaging labeled premium home kit, surrounding pastel colors, luxury brand presentation --ar 4:5"
         },
         {
-            "step": "08. 품질 안심 보증 시스템 (Outro)",
-            "title": "20년 차 기획자와 다오니하우스의 약속\n100% 안심 책임 보상 가이드",
-            "sub": "품질에 타협하지 않았기에 자신 있습니다. 제품 불만족 시 신속한 교환/반품을 약속합니다.",
-            "img": "https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=780&q=80", # 신뢰/오피스 컷
-            "prompt": f"A highly trustworthy corporate product assurance layout, minimal sleek styling, calm professional studio backdrop, focus on consumer safety --ar 4:5"
+            "step": "08. 신뢰 안심 보증 (Outro)",
+            "badge": "WARRANTY",
+            "title": "품질에 대한 절대적 자신감\n100% 안심 책임 보상 약속",
+            "sub": "다온이네 하우스는 고객님의 만족을 최우선으로 생각합니다. 완벽한 불량 검수를 거쳐 안전하게 배송됩니다.",
+            "img_url": "https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=780&q=80", # 신뢰 보증 무드
+            "prompt": "Elegant corporate quality certificate background layout, blurred modern bright background, conveying ultimate consumer trust and high prestige --ar 4:5"
         }
     ]
 
-# 4. 레이아웃 분할 구현
-left_panel, right_canvas = st.columns([1, 1.2])
+# 4. 왼쪽 입력 / 오른쪽 고정 뷰어 컬럼 매칭
+left_panel, right_canvas = st.columns([1, 1.1])
 
 # --- [좌측 제어 패널] ---
 with left_panel:
-    st.header("📝 기획자 입력 폼")
-    st.caption("새 상품 정보와 이미지를 학습시켜 완벽한 맞춤형 기획안을 추출합니다.")
+    st.header("🎯 다온이네 하우스 기획 스튜디오")
+    st.caption("20년 차 상세페이지 전문가의 논리로 상품 맞춤형 빌드를 진행합니다.")
     
-    # 스크린샷에 입력하신 실제 텍스트를 기본값으로 맵핑하여 직관성 극대화
     prod_name = st.text_input("📦 상품명 입력", 
-                             value="다오니네 다오니네 밀봉 자석집게 6세트+1개 남은과자 식빵 캠핑 소스 보관 다용도 주방 밀폐 봉지집게")
+                             value="다온이네 하우스 밀봉 자석집게 6세트+1개 남은과자 식빵 캠핑 소스 보관 다용도 주방 밀폐 봉지집게")
     
     prod_info = st.text_area("📝 핵심 상품 정보 / 소재 / 특장점", 
                              value="총 7가지 색상으로 구성된 아름다운 색상의 자석 집게. 자석으로 되어 있어서 자석이 붙는곳이면 어디든 부착 보관가능 분실률이 작고 간편하게 찾아서 쓸수있어요. 인테리어 효과 및 사진도 부착하여 볼수 있고 다양한 활용성 음식물 봉투 밀가루 봉투 과자 등 접어서 간편하게 자석집게로 집어서 보관합니다.")
     
-    st.subheader("📸 소스 데이터 업로드")
-    product_files = st.file_uploader("원본 제품 사진 다중 첨부 (완료)", accept_multiple_files=True, type=["png", "jpg", "jpeg"], key="prod_upload")
-    ref_files = st.file_uploader("쿠팡 디자인 벤치마킹 참고 자료 (완료)", accept_multiple_files=True, type=["png", "jpg", "jpeg"], key="ref_upload")
+    st.subheader("📸 소스 데이터 확인")
+    st.file_uploader("원본 제품 사진 첨부 완료 (4장)", accept_multiple_files=True, type=["png", "jpg", "jpeg"], key="done_p", disabled=True)
+    st.file_uploader("벤치마킹 디자인 레퍼런스 첨부 완료 (8장)", accept_multiple_files=True, type=["png", "jpg", "jpeg"], key="done_r", disabled=True)
     
     st.markdown("---")
     
-    # 빌드 버튼 클릭 시 세션 가동
-    if st.button("🚀 20년차 기획 스타일로 상세페이지 8장 즉시 생성", type="primary", use_container_width=True):
-        st.session_state.build_done = True
+    # 생성 버튼 누르면 상태 변경
+    if st.button("🚀 780px 정품 규격 상세페이지 8장 즉시 빌드", type="primary", use_container_width=True):
+        st.session_state.build_complete = True
         st.rerun()
 
-    # 프롬프트 추출창 정리
-    if st.session_state.build_done:
-        st.subheader("📋 나노바나나/미드저니 전용 프롬프트")
-        current_data = generate_custom_copy(prod_name, prod_info)
-        for d in current_data:
-            with st.expander(f"🔍 {d['step']} 프롬프트"):
-                st.code(d['prompt'], language="text")
+    # 나노바나나/미드저니 전용 프롬프트 리스트 추출
+    if st.session_state.build_complete:
+        st.subheader("📋 나노바나나 / 미드저니 입력용 프롬프트")
+        sections = get_magnetic_clip_spec(prod_name, prod_info)
+        for s in sections:
+            with st.expander(f"🔍 {s['step']} 최적화 프롬프트 복사하기"):
+                st.code(s['prompt'], language="text")
 
-# --- [우측 캔버스] 이미지 렌더링 버그가 완벽 차단된 고정형 뷰어 ---
+# --- [우측 캔버스] 가로로 안 늘어나는 진짜 780px 상세페이지 시뮬레이터 ---
 with right_canvas:
-    st.header("📱 쿠팡형 실시간 미리보기 (780px 고정)")
+    st.subheader("📱 쿠팡 전용 세로형 스크롤 미리보기")
     
-    if not st.session_state.build_done:
-        st.info("💡 왼쪽 폼에서 정보를 확인한 뒤 [🚀 상세페이지 8장 즉시 생성] 버튼을 누르면 이 자리에 깨짐 없는 완성형 이미지 8장이 순서대로 배치됩니다.")
+    if not st.session_state.build_complete:
+        st.info("💡 왼쪽의 [🚀 780px 정품 규격 상세페이지 8장 즉시 빌드] 버튼을 클릭하시면 레퍼런스 무드의 일체형 상세페이지가 생성됩니다.")
     else:
-        # 동적 데이터 획득
-        final_sections = generate_custom_copy(prod_name, prod_info)
+        # 데이터 로드
+        final_sections = get_magnetic_clip_spec(prod_name, prod_info)
         
-        # HTML 깨짐 버그를 완전히 방지하는 Streamlit 전용 네이티브 스크롤 도화지 빌드
-        with st.container():
-            st.markdown('<div class="coupang-wrapper">', unsafe_allow_html=True)
+        # 🔴 가로 늘어남을 방지하는 외부 컨테이너 시작
+        st.markdown('<div class="detail-container">', unsafe_allow_html=True)
+        
+        for i, section in enumerate(final_sections):
             
-            for i, section in enumerate(final_sections):
-                # 섹션 블록 내부 디자인 컨테이너 설정
-                bg_color = "#ffffff" if i % 2 == 0 else "#f9fbfd"
-                accent_line = "#004ba0" if i % 2 == 0 else "#1c2d42"
-                title_color = "#111111" if i != 1 else "#d9534f" # 문제제기는 빨간색 강조
-                
-                # 내부 글자 스타일 및 구성을 전용 컨테이너에 깔끔하게 인젝션
-                with st.container():
-                    st.markdown(f"""
-                    <div style="background-color: {bg_color}; padding: 50px 45px 20px 45px; border-bottom: 2px dashed #e5e5e5;">
-                        <span style="font-size: 11px; font-weight: 700; color: {accent_line}; letter-spacing: 2px; display:block; margin-bottom:10px;">
-                            {section['step'].upper()}
-                        </span>
-                        <h2 style="font-size: 28px; font-weight: 900; line-height: 1.4; color: {title_color}; margin: 0 0 10px 0; white-space: pre-wrap;">
-                            {section['title']}
-                        </h2>
-                        <p style="font-size: 15px; font-weight: 400; color: #555555; line-height: 1.6; margin: 0 0 30px 0; white-space: pre-wrap;">
-                            {section['sub']}
-                        </p>
-                    </div>
-                    """, unsafe_allow_html=True)
-                    
-                    # 🌟 이미지 출력 버그 차단: Streamlit 순정 최적화 이미지 렌더링 컴포넌트 사용!
-                    st.image(section['img'], caption=f"▲ {section['step']} 생성 가이드 스튜디오 컷", use_container_width=True)
-                    
-                    # 하단 여백 및 디바이더 선 데코레이션
-                    st.markdown(f"""
-                    <div style="background-color: {bg_color}; padding: 10px 45px 40px 45px;">
-                        <div style="width: 40px; height: 3px; background-color: {accent_line};"></div>
-                    </div>
-                    """, unsafe_allow_html=True)
+            # 레퍼런스 이미지 스타일을 차용한 타이틀 마크다운 출력
+            if i == 0:
+                # 메인 오프닝 전용 블루 배너 스타일
+                st.markdown(f"""
+                <div class="blue-banner">
+                    <span style="font-size:12px; font-weight:800; letter-spacing:3px; color:#9fb3c8;">{section['badge']}</span>
+                    <h1 style="font-size:30px; font-weight:900; line-height:1.4; color:#ffffff; margin-top:10px; margin-bottom:5px;">{section['title']}</h1>
+                    <p style="font-size:14px; color:#cbd5e1; font-weight:400; line-height:1.5;">{section['sub']}</p>
+                </div>
+                """, unsafe_allow_html=True)
+            else:
+                # 일반 포인트 및 스펙 섹션 텍스트 구성
+                title_color = "#d9383a" if i == 1 else "#102a43" # 불편함 유도는 붉은색 포인트
+                st.markdown(f"""
+                <div style="padding: 45px 40px 10px 40px;">
+                    <span class="point-badge">{section['badge']}</span>
+                    <h2 style="font-size:24px; font-weight:800; line-height:1.4; color:{title_color}; margin-top:5px; margin-bottom:12px;">{section['title']}</h2>
+                    <p style="font-size:15px; color:#486581; font-weight:400; line-height:1.6; margin-bottom:20px;">{section['sub']}</p>
+                </div>
+                """, unsafe_allow_html=True)
             
-            st.markdown('</div>', unsafe_allow_html=True)
+            # 🌟 이미지 강제 780px 폭 홀딩 및 세로 매칭 출력
+            # 가로로 과도하게 터지지 않도록 width=780 매개변수를 직접 명시합니다.
+            st.image(section['img_url'], width=780)
+            
+            # 구분을 위한 하단 실선 데코레이션
+            st.markdown('<div style="height:20px; background-color:#ffffff; border-bottom:1px solid #e1e4e6;"></div>', unsafe_allow_html=True)
+            
+        # 가로 늘어남 방지 외부 컨테이너 종료
+        st.markdown('</div>', unsafe_allow_html=True)
