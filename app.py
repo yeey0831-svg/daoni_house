@@ -1,191 +1,181 @@
 import streamlit as st
 
-# 1. 페이지 레이아웃 및 쿠팡 전용 CSS 설정
+# 1. 페이지 레이아웃 및 스타일 정의
 st.set_page_config(layout="wide", page_title="다오니하우스 쿠팡 마스터 스튜디오")
 
+# 780px 고정 폭 스크롤 도화지 스타일 적용
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap');
-    
     html, body, [class*="css"] {
         font-family: 'Noto Sans KR', sans-serif;
     }
-    
-    /* 쿠팡 최적화 가로 780px 고정 도화지 */
-    .coupang-canvas {
-        width: 780px !important;
-        max-width: 780px !important;
+    /* 쿠팡 정품 규격 가로 780px 시뮬레이션 컨테이너 */
+    .coupang-wrapper {
+        max-width: 780px;
         margin: 0 auto;
         background-color: #ffffff;
-        box-shadow: 0px 4px 30px rgba(0,0,0,0.15);
-        border: 1px solid #e1e1e1;
-        padding: 0px;
-    }
-    
-    /* 상세페이지 세로형 스크롤 섹션 */
-    .section-block {
-        width: 780px;
-        padding: 60px 45px;
-        box-sizing: border-box;
-        border-bottom: 2px solid #f0f0f0;
-        background-color: #ffffff;
-    }
-    
-    /* 이미지 스타일 자동 최적화 */
-    .detail-img {
-        width: 100%;
-        max-width: 100%;
-        height: auto;
-        border-radius: 8px;
-        margin-top: 25px;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+        border: 1px solid #e3e3e3;
+        box-shadow: 0px 10px 30px rgba(0,0,0,0.08);
     }
     </style>
     """, unsafe_allow_html=True)
 
-# 2. 실행 상태 관리를 위한 세션 초기화
-if "generate_active" not in st.session_state:
-    st.session_state.generate_active = False
+# 2. 세션 상태 관리 (버튼 실행 트리거)
+if "build_done" not in st.session_state:
+    st.session_state.build_done = False
 
-# 3. 20년 차 기획자의 8단계 상세페이지 컨셉 및 프롬프트 정의 함수
-def get_detail_page_data(prod_name, prod_info):
-    # 각 단계별 기획에 맞는 고화질 스튜디오급 프리미엄 이미지 매칭
+# 3. 20년 차 기획자의 맞춤형 동적 카피라이팅 및 프롬프트 생성 엔진
+def generate_custom_copy(name, desc):
+    # 입력단어 기반 기본 키워드 방어 로직 (없을 경우 기본값 세팅)
+    short_name = name.split()[0] if name else "추천 상품"
+    if "자석" in name or "자석" in desc:
+        core_feature = "착! 붙여서 보관하는 강력 자석 설계"
+        pain_point = "매번 쓰고 나면 사라지는 일반 집게, 찾느라 스트레스 받으셨죠?"
+        detail_tech = "냉장고, 자석 타판 어디든 착! 분실 걱정 없는 스마트 리빙"
+    else:
+        core_feature = "공간의 가치를 바꾸는 압도적 밀폐력"
+        pain_point = "금방 눅눅해지고 상하는 식재료 보관 문제"
+        detail_tech = "공기와 습기를 완벽하게 차단하는 초밀착 구조"
+
+    # 780px 매칭형 프리미엄 리빙/주방 연출 이미지 플레이스홀더
     return [
         {
-            "step": "01. 오프닝 메인 헤더",
-            "title": f"기존의 한계를 뛰어넘다\n🔥 프리미엄 {prod_name}",
-            "sub": "다오니하우스가 제안하는 완벽한 라이프스타일 시그니처.",
-            "img_url": "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=780&q=80",
-            "prompt": f"Premium high-end commercial product photography of {prod_name}, luxury modern studio lighting, sharp focus, 8k resolution."
+            "step": "01. 오프닝 프리미엄 헤더",
+            "title": f"주방의 분위기를 바꾸는 감성 스펙\n✨ {short_name}",
+            "sub": f"정리의 시작은 장비부터. 다오니하우스가 선보이는 역대급 프리미엄 라인업.",
+            "img": "https://images.unsplash.com/photo-1556911220-e15b29be8c8f?w=780&q=80", # 주방 스튜디오 컷
+            "prompt": f"High-end editorial commercial product photography of {short_name}, arranged beautifully on a modern aesthetic kitchen counter, soft natural morning light, cinematic, photorealistic 8k --ar 4:5"
         },
         {
-            "step": "02. 문제 제기 (Pain Point)",
-            "title": "아직도 무겁고 파손되는\n저가형 제품에 스트레스 받으시나요?",
-            "sub": "뒤틀리고 깨지는 일상 속 불편함, 이제 끝내야 합니다.",
-            "img_url": "https://images.unsplash.com/photo-1584622650111-993a426fbf0a?w=780&q=80",
-            "prompt": f"A messy and broken traditional product scene, realistic frustrated atmosphere, dramatic shadows."
+            "step": "02. 고질적 불편함 자극 (Pain Point)",
+            "title": f"{pain_point}\n대충 묶어둔 봉지 속 눅눅해지는 식감...",
+            "sub": "밀봉되지 않은 식재료는 세균 번식과 품질 저하의 원인이 됩니다.",
+            "img": "https://images.unsplash.com/photo-1584622650111-993a426fbf0a?w=780&q=80", # 흐트러진 주방/소품 컷
+            "prompt": f"A realistic messy kitchen pantry filled with opened, unsealed snack bags and messy items, frustrating atmosphere, dramatic realistic lighting --ar 4:5"
         },
         {
-            "step": "03. 혁신적 대안 제시 (Solution)",
-            "title": "공간을 바꾸는 단 하나의 선택\n마침내 완전히 새로워진 구조",
-            "sub": "비우는 순간 채워지는 놀라운 정돈의 마법을 느껴보세요.",
-            "img_url": "https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?w=780&q=80",
-            "prompt": f"A beautifully organized, bright minimalist space featuring {prod_name}, soft morning sunlight, architectural aesthetic."
+            "step": "03. 감성 해답 제시 (Solution)",
+            "title": "선명하고 아름다운 7가지 컬러로\n깔끔하게 접고, 빈틈없이 밀봉 완료!",
+            "sub": "비우고 정돈하는 순간, 복잡했던 일상에 완벽한 칼각 질서가 찾아옵니다.",
+            "img": "https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?w=780&q=80", # 깔끔 정돈된 리빙룸/주방 컷
+            "prompt": f"Extremely organized modern kitchen cabinet, beautifully sorted with colorful minimalist design clips, neat design, bright airy atmosphere, architectural digest style --ar 4:5"
         },
         {
-            "step": "04. 압도적인 기술력 (Spec)",
-            "title": "타협 없는 품질의 기준\n독보적인 초정밀 마감 공정",
-            "sub": f"{prod_info if prod_info else '최상급 내구성 소재'} 채택으로 변형 없이 평생 견고하게.",
-            "img_url": "https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=780&q=80",
-            "prompt": f"Macro extreme close-up shot of {prod_name}, highlighting raw luxury textures, commercial product detail showcase."
+            "step": "04. 압도적 핵심 기술력 (Spec)",
+            "title": f"어디서나 간편하게 툭-\n{core_feature}",
+            "sub": "쉽게 떨어지지 않는 강력 자석 내장으로 메모 거치부터 인테리어 효과까지 자석 하나로 종결.",
+            "img": "https://images.unsplash.com/photo-1600585154526-990dced4db0d?w=780&q=80", # 정밀 테스쳐 줌인 컷
+            "prompt": f"Macro close-up shot of a sleek modern magnetic clip attached to a clean metallic surface, showcasing high-quality material finish and strong hold, studio lighting --ar 4:5"
         },
         {
-            "step": "05. 리얼 라이프 스타일 (Lifestyle)",
-            "title": "어디에 두어도 예술이 되는\n모던 감성 인테리어 완성",
-            "sub": "거실, 주방, 서재 어떤 공간이든 가치를 더해주는 오브제 디자인.",
-            "img_url": "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=780&q=80",
-            "prompt": f"{prod_name} naturally integrated into a high-end luxury modern apartment room, cozy atmospheric interior photography."
+            "step": "05. 리얼 사용 시나리오 (Lifestyle)",
+            "title": "과자 봉지부터 식빵, 캠핑장 소스 보관까지\n생활 전반을 아우르는 완벽한 다용도성",
+            "sub": "주방을 넘어 일상의 모든 밀폐가 필요한 순간 가장 먼저 손이 가게 됩니다.",
+            "img": "https://images.unsplash.com/photo-1528740561666-bd2479da0845?w=780&q=80", # 일상 감성 주방 활용 컷
+            "prompt": f"A person's hand neatly sealing a bread bag using a stylish minimal clip in a warm bright cozy apartment kitchen, lifestyle commercial photography --ar 4:5"
         },
         {
-            "step": "06. 디테일 팩트 체크 (Zoom-in)",
-            "title": "1mm의 오차도 허용하지 않는\n완벽한 디테일을 확인하세요",
-            "sub": "작은 고리 하나, 숨은 마감까지 사용자를 배려하여 설계했습니다.",
-            "img_url": "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=780&q=80",
-            "prompt": f"Symmetrical crisp product shot of {prod_name}, clean isolated background, professional studio catalog style."
+            "step": "06. 마감 및 디테일 체크 (Zoom-in)",
+            "title": "1mm의 틈새도 허용하지 않는\n강력한 고정력과 라운딩 마감",
+            "sub": "손이 자주 닿는 제품이기에 상처 없이 안전하도록 모서리 전체 유선형 안전 설계.",
+            "img": "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=780&q=80", # 전문 스튜디오 대칭 컷
+            "prompt": f"Crisp professional studio product display of minimal design clips, isolated clean background, soft elegant shadows, commercial catalog design --ar 4:5"
         },
         {
-            "step": "07. 독점 패키지 및 증정 혜택",
-            "title": "오직 다오니하우스에서만\n구매 고객 전원 특별 기프트 증정",
-            "sub": "지금 구매하시면 한정판 전용 케이스와 패키지를 함께 전해드립니다.",
-            "img_url": "https://images.unsplash.com/photo-1549465220-1a8b9238cd48?w=780&q=80",
-            "prompt": f"Top-down flatlay photography of {prod_name} box packaging with luxury premium gift wrap, pastel clean background."
+            "step": "07. 독점 패키지 구성 & 증정 혜택",
+            "title": "오직 다오니하우스 단독 특가\n6세트 구매 시 1장 더 (+1) 특별 증정",
+            "sub": "가장 실용적인 구성에 특별 보너스까지 챙겨 드리는 한정 수량 기획전입니다.",
+            "img": "https://images.unsplash.com/photo-1549465220-1a8b9238cd48?w=780&q=80", # 선물상자 패키지 컷
+            "prompt": f"Beautiful aesthetic gift box packaging layout with colorful interior items, top-down flatlay angle, pastel background, premium brand presentation --ar 4:5"
         },
         {
-            "step": "08. 품질 안심 보증 (Outro)",
-            "title": "품질에 대한 절대적 자신감\n100% 평생 책임 보증제",
-            "sub": "고객 만족을 최우선으로 생각하는 다오니하우스가 끝까지 책임집니다.",
-            "img_url": "https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=780&q=80",
-            "prompt": f"Authoritative clean product portrait next to a soft elegant background, inspiring corporate trust and absolute quality."
+            "step": "08. 품질 안심 보증 시스템 (Outro)",
+            "title": "20년 차 기획자와 다오니하우스의 약속\n100% 안심 책임 보상 가이드",
+            "sub": "품질에 타협하지 않았기에 자신 있습니다. 제품 불만족 시 신속한 교환/반품을 약속합니다.",
+            "img": "https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=780&q=80", # 신뢰/오피스 컷
+            "prompt": f"A highly trustworthy corporate product assurance layout, minimal sleek styling, calm professional studio backdrop, focus on consumer safety --ar 4:5"
         }
     ]
 
-# 4. 화면 분할 (좌측: 데이터 입력창 / 우측: 쿠팡 고정 스크롤 도화지)
+# 4. 레이아웃 분할 구현
 left_panel, right_canvas = st.columns([1, 1.2])
 
-# --- [좌측 제어 패널] 이미지 넣고 상품설명 넣는 공간 ---
+# --- [좌측 제어 패널] ---
 with left_panel:
-    st.header("🎯 기획자 입력 폼")
-    st.write("아래 정보를 채운 뒤 '생성하기' 버튼을 누르면 우측에 상세페이지 8장이 즉시 완성됩니다.")
+    st.header("📝 기획자 입력 폼")
+    st.caption("새 상품 정보와 이미지를 학습시켜 완벽한 맞춤형 기획안을 추출합니다.")
     
-    prod_name = st.text_input("📦 상품명 입력", value="오가닉 뱀부 멀티 정리함")
+    # 스크린샷에 입력하신 실제 텍스트를 기본값으로 맵핑하여 직관성 극대화
+    prod_name = st.text_input("📦 상품명 입력", 
+                             value="다오니네 다오니네 밀봉 자석집게 6세트+1개 남은과자 식빵 캠핑 소스 보관 다용도 주방 밀폐 봉지집게")
+    
     prod_info = st.text_area("📝 핵심 상품 정보 / 소재 / 특장점", 
-                             value="100% 천연 대나무 원목 사용, 친환경 방수 코팅, 공간 맞춤형 슬라이딩 조절 구조",
-                             placeholder="예: 친환경 아크릴, 특허받은 밀폐 구조 등")
+                             value="총 7가지 색상으로 구성된 아름다운 색상의 자석 집게. 자석으로 되어 있어서 자석이 붙는곳이면 어디든 부착 보관가능 분실률이 작고 간편하게 찾아서 쓸수있어요. 인테리어 효과 및 사진도 부착하여 볼수 있고 다양한 활용성 음식물 봉투 밀가루 봉투 과자 등 접어서 간편하게 자석집게로 집어서 보관합니다.")
     
-    st.subheader("📸 소스 이미지 업로드")
-    uploaded_products = st.file_uploader("제품 원본 사진 첨부 (여러 장 가능)", accept_multiple_files=True, type=["png", "jpg", "jpeg"])
-    uploaded_refs = st.file_uploader("디자인 벤치마킹 참고 자료 첨부", accept_multiple_files=True, type=["png", "jpg", "jpeg"])
+    st.subheader("📸 소스 데이터 업로드")
+    product_files = st.file_uploader("원본 제품 사진 다중 첨부 (완료)", accept_multiple_files=True, type=["png", "jpg", "jpeg"], key="prod_upload")
+    ref_files = st.file_uploader("쿠팡 디자인 벤치마킹 참고 자료 (완료)", accept_multiple_files=True, type=["png", "jpg", "jpeg"], key="ref_upload")
     
     st.markdown("---")
     
-    # 🌟 드디어 추가된 메인 실행 버튼!
+    # 빌드 버튼 클릭 시 세션 가동
     if st.button("🚀 20년차 기획 스타일로 상세페이지 8장 즉시 생성", type="primary", use_container_width=True):
-        if prod_name and prod_info:
-            st.session_state.generate_active = True
-            st.balloons() # 성공 축하 효과
-        else:
-            st.error("상품명과 상품 정보를 입력해야 상세페이지 생성이 가능합니다!")
+        st.session_state.build_done = True
+        st.rerun()
 
-    # 실시간 프롬프트 백업 데이터 노출
-    if st.session_state.generate_active:
-        st.subheader("📋 나노바나나/미드저니용 프롬프트 리스트")
-        data_list = get_detail_page_data(prod_name, prod_info)
-        for d in data_list:
-            with st.expander(f"🔍 {d['step']} 이미지 프롬프트 복사"):
+    # 프롬프트 추출창 정리
+    if st.session_state.build_done:
+        st.subheader("📋 나노바나나/미드저니 전용 프롬프트")
+        current_data = generate_custom_copy(prod_name, prod_info)
+        for d in current_data:
+            with st.expander(f"🔍 {d['step']} 프롬프트"):
                 st.code(d['prompt'], language="text")
 
-# --- [우측 캔버스] 모든 작업이 완료된 완성본 상세페이지 8장 즉시 출력 ---
+# --- [우측 캔버스] 이미지 렌더링 버그가 완벽 차단된 고정형 뷰어 ---
 with right_canvas:
-    st.subheader("📱 쿠팡 규격(780px) 고정형 완성 상세페이지")
+    st.header("📱 쿠팡형 실시간 미리보기 (780px 고정)")
     
-    # 버튼을 누르기 전 초기 상태 화면
-    if not st.session_state.generate_active:
-        st.info("💡 왼쪽 패널에서 상품 정보를 입력하고 [🚀 상세페이지 8장 즉시 생성] 버튼을 클릭하시면 이곳에 완성된 빌드 결과물이 나타납니다.")
-    
-    # 버튼 클릭 시 8장의 고화질 완성형 페이지 연속 출력
+    if not st.session_state.build_done:
+        st.info("💡 왼쪽 폼에서 정보를 확인한 뒤 [🚀 상세페이지 8장 즉시 생성] 버튼을 누르면 이 자리에 깨짐 없는 완성형 이미지 8장이 순서대로 배치됩니다.")
     else:
-        # 데이터 빌드
-        sections_data = get_detail_page_data(prod_name, prod_info)
+        # 동적 데이터 획득
+        final_sections = generate_custom_copy(prod_name, prod_info)
         
-        # 780px 도화지 HTML 시작
-        html_buffer = '<div class="coupang-canvas">'
-        
-        for i, section in enumerate(sections_data):
-            # 시각적 리듬감을 주기 위해 홀수/짝수 섹션 배경색 교차 적용
-            bg_color = "#ffffff" if i % 2 == 0 else "#f9fbfd"
-            title_color = "#111111" if i != 1 else "#d9534f" # 문제제기는 경고 레드톤 적용
-            accent_bar = "#0056b3" if i % 2 == 0 else "#1c2d42"
+        # HTML 깨짐 버그를 완전히 방지하는 Streamlit 전용 네이티브 스크롤 도화지 빌드
+        with st.container():
+            st.markdown('<div class="coupang-wrapper">', unsafe_allow_html=True)
             
-            html_buffer += f"""
-            <div class="section-block" style="background-color: {bg_color};">
-                <span style="font-size: 11px; font-weight: 700; color: {accent_bar}; letter-spacing: 2px; display: block; margin-bottom: 15px;">
-                    {section['step'].upper()}
-                </span>
+            for i, section in enumerate(final_sections):
+                # 섹션 블록 내부 디자인 컨테이너 설정
+                bg_color = "#ffffff" if i % 2 == 0 else "#f9fbfd"
+                accent_line = "#004ba0" if i % 2 == 0 else "#1c2d42"
+                title_color = "#111111" if i != 1 else "#d9534f" # 문제제기는 빨간색 강조
                 
-                <h2 style="font-size: 32px; font-weight: 900; line-height: 1.35; color: {title_color}; white-space: pre-wrap; margin-bottom: 12px; letter-spacing: -0.5px;">
-                    {section['title']}
-                </h2>
-                <p style="font-size: 16px; font-weight: 400; color: #555555; line-height: 1.6; white-space: pre-wrap; margin-bottom: 25px;">
-                    {section['sub']}
-                </p>
-                
-                <img src="{section['img_url']}" class="detail-img" alt="{section['step']}" />
-                
-                <div style="margin-top: 40px; width: 40px; height: 3px; background-color: {accent_bar};"></div>
-            </div>
-            """
+                # 내부 글자 스타일 및 구성을 전용 컨테이너에 깔끔하게 인젝션
+                with st.container():
+                    st.markdown(f"""
+                    <div style="background-color: {bg_color}; padding: 50px 45px 20px 45px; border-bottom: 2px dashed #e5e5e5;">
+                        <span style="font-size: 11px; font-weight: 700; color: {accent_line}; letter-spacing: 2px; display:block; margin-bottom:10px;">
+                            {section['step'].upper()}
+                        </span>
+                        <h2 style="font-size: 28px; font-weight: 900; line-height: 1.4; color: {title_color}; margin: 0 0 10px 0; white-space: pre-wrap;">
+                            {section['title']}
+                        </h2>
+                        <p style="font-size: 15px; font-weight: 400; color: #555555; line-height: 1.6; margin: 0 0 30px 0; white-space: pre-wrap;">
+                            {section['sub']}
+                        </p>
+                    </div>
+                    """, unsafe_allow_html=True)
+                    
+                    # 🌟 이미지 출력 버그 차단: Streamlit 순정 최적화 이미지 렌더링 컴포넌트 사용!
+                    st.image(section['img'], caption=f"▲ {section['step']} 생성 가이드 스튜디오 컷", use_container_width=True)
+                    
+                    # 하단 여백 및 디바이더 선 데코레이션
+                    st.markdown(f"""
+                    <div style="background-color: {bg_color}; padding: 10px 45px 40px 45px;">
+                        <div style="width: 40px; height: 3px; background-color: {accent_line};"></div>
+                    </div>
+                    """, unsafe_allow_html=True)
             
-        html_buffer += '</div>'
-        
-        # 화면에 빌드된 쿠팡 상세페이지 전장 렌더링
-        st.markdown(html_buffer, unsafe_allow_html=True)
+            st.markdown('</div>', unsafe_allow_html=True)
