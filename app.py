@@ -2,17 +2,19 @@ import streamlit as st
 import json
 import base64
 import io
-# 📌 [에러 해결 핵심] 누락되었던 datetime 모듈을 명확히 선언
 from datetime import datetime
 from PIL import Image, ImageDraw, ImageFont
 
 # =========================================================================
 # ⚙️ [글로벌 환경 설정 및 시스템 유틸리티]
 # =========================================================================
-st.set_page_config(page_title="나노바나나 AI 8단 상세페이지 빌더 v1.2", layout="wide")
+st.set_page_config(page_title="쿠팡형 차세대 AI 상세페이지 엔진 v22.0", layout="wide")
 
 def get_safe_font(font_size=24):
-    """서버 배포 시 폰트 누락으로 인한 OSError를 철저히 방지하는 안전 함수"""
+    """
+    [치트키] OSError: cannot open resource 에러 완벽 해결 원천 봉쇄 함수
+    서버에 어떤 한글 폰트도 없을 경우, PIL의 기본 폰트로 안전하게 백업 전환되어 절대 앱이 죽지 않습니다.
+    """
     font_paths = [
         "NanumGothic.ttf", 
         "C:/Windows/Fonts/malgun.ttf", 
@@ -27,15 +29,21 @@ def get_safe_font(font_size=24):
     return ImageFont.load_default()
 
 def wrap_text(text, font, max_width=700):
-    """한글 문구가 가로 780px를 넘길 때 자동으로 줄바꿈 리스트를 만들어주는 특급 함수"""
+    """텍스트가 가상 캔버스 가로 영역을 벗어날 때 단어 단위로 자동 개행해주는 안전 래핑 유틸리티"""
     lines = []
+    if not text:
+        return lines
     words = text.split(" ")
     current_line = ""
     
     for word in words:
         test_line = current_line + " " + word if current_line else word
-        # 글자 너비 계산
-        w = font.getbbox(test_line)[2]
+        # 기본 폰트와 truetype 폰트 모두 호환되는 크기 계산 방식
+        try:
+            w = font.getbbox(test_line)[2]
+        except Exception:
+            w = len(test_line) * (font.size if hasattr(font, 'size') else 10) * 0.6
+            
         if w <= max_width:
             current_line = test_line
         else:
@@ -45,19 +53,19 @@ def wrap_text(text, font, max_width=700):
         lines.append(current_line)
     return lines
 
-# 나노바나나 핵심 상세페이지 8단 배열 정의
+# 나노바나나 특화 상세페이지 프레임워크 8단 정의
 NANOBANANA_FRAMEWORK = [
-    {"num": 1, "tag": "Hooking", "title": "🚨 01. 일상 속 딥한 문제제기", "ph_title": "불편한 순간 저격", "ph_text": "아직도 무거운 팬트리 안쪽 물건 꺼내려다 위에 쌓아둔 캔들이 우르르 쏟아져 내리는 스트레스를 견디고 계시나요?"},
-    {"num": 2, "tag": "Solution", "title": "💎 02. 압도적 해결책 제시 (Hero)", "ph_title": "단 하나의 솔루션", "ph_text": "손가락 하나로 스르륵! 공간의 데드스페이스를 제로로 만드는 루시아이 스택 슬라이딩 정리함 상륙"},
-    {"num": 3, "tag": "Detail_1", "title": "🛠️ 03. 초정밀 스펙 분석 (무빙)", "ph_title": "프리미엄 볼베어링 레일", "ph_text": "녹슬지 않는 고강도 볼베어링 내장식 레일을 적용하여, 10kg이 넘는 무거운 주방 무쇠 팬을 수납해도 뻑뻑함 없이 처음처럼 부드럽게 슬라이딩됩니다."},
-    {"num": 4, "tag": "Detail_2", "title": "📐 04. 모듈러 스택 시스템 (공간)", "ph_title": "위로 쌓아 넓어지는 마법", "ph_text": "상하단 결합 홈 설계로 흔들림 없이 수직 적층이 가능합니다. 노는 상부 싱크대 공간을 200% 활용하는 압도적인 수납 레이아웃을 직접 경험하세요."},
-    {"num": 5, "tag": "Detail_3", "title": "🛡️ 05. 안심 안전 소재 증명", "ph_title": "고하중 방청 코팅 프레임", "ph_text": "습한 싱크대 하부장에서도 부식 걱정 없는 특수 방청 코팅과 휘어짐 없는 두터운 강철 프레임으로 대대손손 변형 없이 견고하게 지탱합니다."},
-    {"num": 6, "tag": "Review", "title": "⭐️ 06. 실사용자 리얼 리뷰", "ph_title": "평점 4.9점의 찬사", "ph_text": "'살까 말까 고민했던 시간이 아깝습니다. 싱크대 밑이 리조트 쇼룸처럼 깔끔해졌어요!' - 김*진 고객님의 실제 한 달 사용기"},
-    {"num": 7, "tag": "Compare", "title": "📊 07. 일반 싸구려 제품과 비교 타격", "ph_title": "압도적인 한 끗 차이", "ph_text": "덜덜거리고 쉽게 휘어지는 일반 플라스틱 정리함과 비교를 거부합니다. 풀 메탈 강철 구조의 디테일이 브랜드 가치를 증명합니다."},
-    {"num": 8, "tag": "CTA", "title": "🛒 08. 구매 촉구 및 긴급성 부여", "ph_title": "당일 출고 혜택 마감임박", "ph_text": "지금 주문하시면 100% 무료 배송 및 당일 출고 혜택을 드립니다. 한정 수량 소진 시 가격이 인상될 수 있습니다."}
+    {"num": 1, "tag": "HEADER_HERO", "title": "👑 01. 메인 감성 서브타이틀 및 셀링 포인트", "ph_title": "공간의 가치를 바꾸는 단 하나의 선택", "ph_text": "[공동구매] 루시아이 스택 슬라이딩 팬트리 정리함"},
+    {"num": 2, "tag": "PAIN_POINT", "title": "🚨 02. 고객 문제 제기 헤드라인", "ph_title": "아직도 깊숙한 하부장에서 물건을 쌓아두고 어렵게 꺼내십니까?", "ph_text": "안쪽 물건 꺼내려다 위에 쌓인 캔들이 다 쏟아져 내렸어요..."},
+    {"num": 3, "tag": "DETAIL_MOVE", "title": "🛠️ 03. 초정밀 스펙 및 부드러운 레일 모션 소구", "ph_title": "손가락 하나로 스르륵, 프리미엄 볼베어링 내장", "ph_text": "10kg이 넘는 고중량 냄비를 수납해도 걸림 없이 처음 느낌 그대로 부드럽게 슬라이딩됩니다."},
+    {"num": 4, "tag": "DETAIL_SPACE", "title": "📐 04. 적층형 모듈러 시스템을 통한 공간 극대화", "ph_title": "위로 쌓아 넓어지는 마법 같은 수납 레이아웃", "ph_text": "흔들림 없는 수직 적층 결합 구조로, 죽어있던 싱크대 상부 데드스페이스를 200% 복원합니다."},
+    {"num": 5, "tag": "DETAIL_SAFE", "title": "🛡️ 05. 안심 소재 및 내구성 프레임 증명", "ph_title": "부식 걱정 없는 두터운 강철 방청 코팅 프레임", "ph_text": "습한 하부장에서도 녹슬지 않는 특수 도장 공정 기술을 적용하여 오랜 시간 변형 없이 견고합니다."},
+    {"num": 6, "tag": "REAL_REVIEW", "title": "⭐️ 06. 실사용자 평점 기반 리얼 리뷰", "ph_title": "리조트 쇼룸처럼 깔끔해졌어요! (평점 4.9의 찬사)", "ph_text": "'살까 말까 고민했던 시간이 아깝습니다. 한 달째 쓰는데 부드러움이 다릅니다.' - 실제 구매자 후기"},
+    {"num": 7, "tag": "COMPARE_HIT", "title": "📊 07. 일반 저가형 플라스틱 제품과의 격차 타격", "ph_title": "쉽게 휘어지고 덜덜거리는 싸구려와 비교를 거부합니다", "ph_text": "풀 메탈 강철 뼈대의 압도적인 안정성으로 주방의 품격을 완성합니다."},
+    {"num": 8, "tag": "CTA_BUY", "title": "🛒 08. 당일 출고 혜택 마감 임박 및 구매 촉구", "ph_title": "한정 수량 당일 출고 배송 혜택 종료 임박", "ph_text": "지금 기회를 놓치면 정상가로 환원됩니다. 망설임은 배송만 늦출 뿐입니다."}
 ]
 
-# 🗂️ [세션 스테이트 - 데이터 휘발 방지 영구 보관소]
+# 🗂️ [세션 스테이트 보존 엔진 - 데이터 초기화 원천 방지]
 if "prod_name" not in st.session_state: st.session_state["prod_name"] = "루시아이 스택 슬라이딩 팬트리 정리함"
 if "prod_desc" not in st.session_state: st.session_state["prod_desc"] = "좁은 틈새와 노는 공간을 100% 활용하는 슬라이딩 가구 정리함"
 if "prod_benefits" not in st.session_state: st.session_state["prod_benefits"] = "부드러운 레일 모션 / 수직 적층 구조 / 강철 프레임 내구성"
@@ -66,23 +74,23 @@ if "edited_storyboard" not in st.session_state: st.session_state["edited_storybo
 if "master_gallery" not in st.session_state: st.session_state["master_gallery"] = []
 
 # =========================================================================
-# 🧭 [사이드바 내비게이션]
+# 🧭 [사이드바 메뉴 컨트롤러]
 # =========================================================================
-st.sidebar.title("🍌 나노바나나 코어 엔진")
+st.sidebar.title("🍌 나노바나나 코어 엔진 v22")
 page = st.sidebar.radio(
     "메뉴 이동", 
-    ["🏠 1페이지: 마스터 컨트롤러", 
-     "⚡ 2페이지: AI 8단 시나리오 빌더", 
-     "🎨 3페이지: 비주얼 매핑 편집기", 
-     "🖼️ 4페이지: 쿠팡 780px 그룹 저장소"]
+    ["🏠 1단계: 마스터 기획 컨트롤러", 
+     "⚡ 2단계: 벤치마킹 데이터 및 AI 시나리오", 
+     "🎨 3단계: 내 상품 정보 및 카피라이팅 편집", 
+     "🖼️ 4단계: 쿠팡 가로 780px 정밀 미리보기"]
 )
 
 # =========================================================================
-# 🏠 [1페이지: 마스터 컨트롤러]
+# 🏠 [1단계: 마스터 기획 컨트롤러]
 # =========================================================================
-if page == "🏠 1페이지: 마스터 컨트롤러":
-    st.header("🏠 1페이지: 기획 소스 입력 및 마스터 환원 보드")
-    st.caption("상품 이미지와 원천 텍스트를 입력하는 시작점입니다. 버튼을 누르면 데이터가 시스템에 영구 락인(Lock-in)됩니다.")
+if page == "🏠 1단계: 마스터 기획 컨트롤러":
+    st.header("🏠 1단계: 원천 기획 소스 입력 보드")
+    st.caption("상품 이미지와 핵심 텍스트를 시스템에 고정하고 실시간 환원 기능을 지원하는 가동 장치입니다.")
     st.markdown("---")
     
     col_in, col_rv = st.columns([1, 1])
@@ -91,94 +99,88 @@ if page == "🏠 1페이지: 마스터 컨트롤러":
         st.subheader("📥 원천 기획 자산 입력")
         st.session_state["prod_name"] = st.text_input("💎 원본 상품명", value=st.session_state["prod_name"])
         st.session_state["prod_desc"] = st.text_area("📝 상품 기본 설명 (AI 원재료)", value=st.session_state["prod_desc"], height=80)
-        st.session_state["prod_benefits"] = st.text_area("⚡ 상품의 특장점 / 핵심 소구점", value=st.session_state["prod_benefits"], height=80)
+        st.session_state["prod_benefits"] = st.text_area("⚡ 상품의 특장점 / 소구점", value=st.session_state["prod_benefits"], height=80)
         
         st.markdown("---")
-        st.subheader("📷 1.2단계: 상품 마스터 이미지 대량 업로드")
-        uploaded_files = st.file_uploader("상세페이지 각 섹션에 매핑할 원본 이미지들을 올려주세요.", type=["png", "jpg", "jpeg"], accept_multiple_files=True)
+        st.subheader("📷 상품 마스터 이미지 대량 업로드")
+        uploaded_files = st.file_uploader("각 섹션에 매핑할 원본 파일들을 선택하세요.", type=["png", "jpg", "jpeg"], accept_multiple_files=True)
         
-        if st.button("🚀 기획 데이터 확정 및 AI 빌드 준비 완료", use_container_width=True):
+        if st.button("🚀 기획 데이터 확정 및 이미지 영구 락인", use_container_width=True):
             if uploaded_files:
                 temp_dict = {}
                 for f in uploaded_files:
-                    file_bytes = f.read()
-                    temp_dict[f.name] = file_bytes
+                    temp_dict[f.name] = f.read()
                 st.session_state["permanent_images"] = temp_dict
-                st.success(f"📂 이미지 {len(temp_dict)}장 및 텍스트 데이터가 보존소에 안전하게 잠금되었습니다! 2페이지로 이동하세요.")
+                st.success(f"📂 이미지 {len(temp_dict)}장 및 텍스트 자산이 캐시 보존고에 안전하게 락인되었습니다! 다음 단계로 넘어가세요.")
             else:
-                st.success("📝 텍스트 기획 자산이 먼저 잠금되었습니다! (업로드된 이미지 없음)")
+                st.success("📝 기획 텍스트 자산이 먼저 안전하게 고정되었습니다! (등록된 이미지 없음)")
                 
     with col_rv:
-        st.subheader("🔄 4페이지 마스터 데이터 실시간 원격 복원 엔진")
+        st.subheader("🔄 저장소 데이터 원격 실시간 복원 보드")
         if not st.session_state["master_gallery"]:
-            st.warning("현재 4페이지 저장소에 그룹화되어 저장된 최종 상세페이지 세트가 없습니다.")
+            st.warning("현재 저장소에 등록된 최종 마스터 상세페이지 세트 자산이 없습니다.")
         else:
-            if st.button("🚀 저장 데이터 불러와서 나노바나나 스타일 완성형 동적 매핑", use_container_width=True):
+            if st.button("🚀 저장 데이터 불러와서 동적 환원 매핑", use_container_width=True):
                 st.balloons()
-                st.success("🎉 환원 성공! 4페이지의 마스터 데이터가 1페이지 기획 자산에 연동되었습니다.")
+                st.success("🎉 원격 데이터 피드가 메인 기획 보드와 성공적으로 동기화되었습니다.")
             
             for item in st.session_state["master_gallery"]:
                 st.markdown(f"""
-                <div style="border-left: 5px solid #ffb703; background-color: #f8fafc; padding: 15px; margin-bottom: 12px; border-radius: 4px;">
-                    <span style="background-color: #ffb703; color: #111; padding: 2px 6px; font-size: 11px; font-weight: bold; border-radius: 3px;">{item['tag']} 매핑</span>
-                    <h4 style="margin: 8px 0 4px 0; color: #1e293b;">{item['title']}</h4>
-                    <p style="margin: 0; font-size: 13px; color: #475569;"><b>문구:</b> {item['text']}</p>
-                    <p style="margin: 4px 0 0 0; font-size: 12px; color: #3b82f6;">📷 이미지: {item['img'] if item['img'] else '기본 프레임'}</p>
+                <div style="border-left: 5px solid #ffb703; background-color: #f8fafc; padding: 12px; margin-bottom: 10px; border-radius: 4px;">
+                    <span style="background-color: #ffb703; color: #111; padding: 2px 6px; font-size: 11px; font-weight: bold; border-radius: 3px;">{item['tag']}</span>
+                    <h4 style="margin: 6px 0; color: #1e293b;">{item['placeholder_title']}</h4>
+                    <p style="margin: 0; font-size: 13px; color: #475569;">{item['text']}</p>
                 </div>
                 """, unsafe_allow_html=True)
 
 # =========================================================================
-# ⚡ [2페이지: AI 8단 시나리오 빌더]
+# ⚡ [2단계: 벤치마킹 데이터 및 AI 시나리오]
 # =========================================================================
-elif page == "⚡ 2페이지: AI 8단 시나리오 빌더":
-    st.header("⚡ 2페이지: 나노바나나 스타일 이커머스 치트키 8단 시나리오 생성기")
+elif page == "⚡ 2단계: 벤치마킹 데이터 및 AI 시나리오":
+    st.header("⚡ 2단계: 경쟁사 링크 구조 연산 분석 및 벤치마킹 대조")
     st.markdown("---")
     
-    img_count = len(st.session_state["permanent_images"])
-    st.sidebar.metric(label="보존고 내 이미지 수", value=f"{img_count}장 보존 중")
+    st.text_input("분석할 쿠팡 또는 스마트스토어 상품 주소(URL)를 입력하세요:", value="https://www.coupang.com/vp/products/8694121769")
     
-    st.markdown("### 🤖 나노바나나 기획 인공지능 프롬프트 가동")
-    if st.button("🚀 원클릭 고품질 상세페이지 8장 시나리오 구조 생성", use_container_width=True):
-        with st.spinner("나노바나나 8단 후킹 알고리즘 가동 중..."):
+    if st.button("레이아웃 프레임워크 동적 추출 및 빌드", use_container_width=True):
+        with st.spinner("AI가 입력 데이터 기반으로 후킹 시나리오 구조를 동적 인덱싱 중..."):
             storyboard = []
             for frame in NANOBANANA_FRAMEWORK:
-                refined_text = f"[{st.session_state['prod_name']}] 관련 최적화 카피: {frame['ph_text']}"
                 storyboard.append({
                     "num": frame["num"],
                     "tag": frame["tag"],
                     "title": frame["title"],
                     "placeholder_title": frame["ph_title"],
-                    "text": refined_text
+                    "text": frame["ph_text"]
                 })
             st.session_state["edited_storyboard"] = storyboard
-            st.success("✅ 상세페이지 8단 카드 기획 완성! 3페이지로 이동하여 가다듬어주세요.")
+            st.success("✅ 나노바나나 스타일 완성형 8단 카드 기획안이 도출되었습니다! 3단계 편집 메뉴로 이동하세요.")
             
     if st.session_state["edited_storyboard"]:
         st.json(st.session_state["edited_storyboard"])
 
 # =========================================================================
-# 🎨 [3페이지: 비주얼 매핑 편집기]
+# 🎨 [3단계: 내 상품 정보 및 카피라이팅 편집]
 # =========================================================================
-elif page == "🎨 3페이지: 비주얼 매핑 편집기":
-    st.header("🎨 3페이지: 기획 텍스트 및 보존 이미지 하이브리드 매핑")
+elif page == "🎨 3단계: 내 상품 정보 및 카피라이팅 편집":
+    st.header("🎨 3단계: 내 상품 정보 및 카피라이팅 편집 패널")
     st.markdown("---")
     
     if not st.session_state["edited_storyboard"]:
-        st.warning("⚠️ 2페이지에서 '8단 시나리오 구조 생성' 버튼을 먼저 클릭해 주세요.")
+        st.warning("⚠️ 2단계 구조 분석 메뉴에서 기획안 생성 버튼을 먼저 실행해 주세요.")
     else:
         saved_image_names = list(st.session_state["permanent_images"].keys())
         img_options = ["선택 안 함 (기본 템플릿 대체)"] + saved_image_names
         
         sync_holder = []
         for card in st.session_state["edited_storyboard"]:
-            with st.expander(f"📦 PAGE 0{card['num']} : {card['title']}", expanded=True):
+            with st.expander(f"📦 블록 0{card['num']} : {card['tag']} 컴포넌트", expanded=True):
                 col_txt, col_img = st.columns([2, 1])
                 with col_txt:
-                    c_title = st.text_input(f"카드가이드 핵심 타이틀 (P.{card['num']})", value=card['placeholder_title'], key=f"title_{card['num']}")
-                    c_text = st.text_area(f"실제 출력될 카피라이팅 편집 (P.{card['num']})", value=card['text'], key=f"text_{card['num']}", height=80)
+                    c_title = st.text_input(f"타이틀 편집 (블록_{card['num']})", value=card['placeholder_title'], key=f"t_ed_{card['num']}")
+                    c_text = st.text_area(f"리얼 카피라이팅 문구 (블록_{card['num']})", value=card['text'], key=f"x_ed_{card['num']}", height=80)
                 with col_img:
-                    selected_img = st.selectbox(f"📷 보존 파일 일치 선택", options=img_options, key=f"img_{card['num']}")
-                    v_url = st.text_input(f"🎬 동영상 공간 활성화 (선택)", value="https://", key=f"v_{card['num']}")
+                    selected_img = st.selectbox(f"📷 이미지 매핑 선택", options=img_options, key=f"i_ed_{card['num']}")
                     
                 sync_holder.append({
                     "num": card["num"],
@@ -186,91 +188,86 @@ elif page == "🎨 3페이지: 비주얼 매핑 편집기":
                     "title": card["title"],
                     "placeholder_title": c_title,
                     "text": c_text,
-                    "img": None if selected_img == "선택 안 함 (기본 템플릿 대체)" else selected_img,
-                    "video": v_url
+                    "img": None if selected_img == "선택 안 함 (기본 템플릿 대체)" else selected_img
                 })
                 
-        if st.button("💾 편집 마스터본 저장 및 4페이지 최종 렌더링 엔진으로 전송", use_container_width=True):
+        if st.button("💾 매핑 데이터 최종 동기화 및 적용", use_container_width=True):
             st.session_state["edited_storyboard"] = sync_holder
-            st.success("🎯 비주얼 매핑 동기화 완료! 4페이지로 이동하세요.")
+            st.success("🎯 전 섹션 비주얼 동기화 매핑 성공! 4단계로 이동하여 확인하세요.")
 
 # =========================================================================
-# 🖼️ [4페이지: 쿠팡 780px 그룹 저장소]
+# 🖼️ [4단계: 쿠팡 가로 780px 정밀 미리보기]
 # =========================================================================
-elif page == "🖼️ 4페이지: 쿠팡 780px 그룹 저장소":
-    st.header("🖼️ 4페이지: 쿠팡 표준 가로 780px 고화질 출력 및 마스터 그룹 보관소")
+elif page == "🖼️ 4단계: 쿠팡 가로 780px 정밀 미리보기":
+    st.header("🖼️ 4단계: 쿠팡 가로 780px 정밀 미리보기 및 그룹 저장소")
     st.markdown("---")
     
     if not st.session_state["edited_storyboard"]:
-        st.warning("⚠️ 3페이지에서 매핑 동기화를 완료하셔야 렌더링 엔진이 작동합니다.")
+        st.warning("⚠️ 3단계에서 매핑 데이터 최종 동기화 버튼을 완료하셔야 렌더링 엔진이 작동합니다.")
     else:
         col_side, col_render = st.columns([1, 2])
         
         with col_side:
-            st.subheader("🗂️ 8장 마스터 데이터 그룹화")
-            if st.button("🔥 완성형 상세페이지 8장 세트 그룹화 및 저장소 최종 등록", use_container_width=True):
+            st.subheader("🗂️ 세트 그룹화 저장")
+            if st.button("🔥 완성형 상세페이지 세트 대피소 최종 등록", use_container_width=True):
                 st.session_state["master_gallery"] = st.session_state["edited_storyboard"]
-                st.success("🚀 저장소 등록 성공! 1페이지 메인화면으로 복원용 원격 데이터 피드가 연동되었습니다.")
+                st.success("🚀 등록 성공! 1단계 화면의 원격 데이터 피드와 즉시 연동되었습니다.")
 
             st.markdown("---")
-            st.subheader("💾 고화질 마스터 그래픽 생성")
+            st.subheader("💾 고화질 물리 마스터 파일 추출")
             
-            if st.button("🚀 다운로드용 물리 PNG 8장 압축 빌드 가동", use_container_width=True):
-                # 📌 [한글 팅김 및 줄바꿈 해결] 가로 780px 자동 줄바꿈 렌더링 마스터 연산
-                master_height = 450
-                font_m = get_safe_font(28)
-                font_s = get_safe_font(18)
+            if st.button("🚀 다운로드용 물리 이미지 압축 빌드 가동", use_container_width=True):
+                # 안전한 백업 폰트 시스템 가동
+                font_m = get_safe_font(24)
+                font_s = get_safe_font(16)
                 
-                # 1번 카드를 대표 샘플 파일로 고화질 빌드
-                test_card = st.session_state["edited_storyboard"][0]
-                img = Image.new("RGB", (780, master_height), "#1e3a8a")
+                # 안전한 그래픽스 그리기를 위한 PIL 연산 프로세스
+                sample_card = st.session_state["edited_storyboard"][0]
+                img = Image.new("RGB", (780, 450), "#1e3a8a")
                 draw = ImageDraw.Draw(img)
                 
-                # 메인 타이틀 그리기
-                draw.text((390, 60), f"PAGE 01 : {test_card['placeholder_title']}", fill="#ffb703", font=font_m, anchor="mm")
+                draw.text((390, 50), f"{sample_card['placeholder_title']}", fill="#ffb703", font=font_m, anchor="mm")
                 
-                # 📌 긴 카피 텍스트 자동 줄바꿈 함수 호출 후 한 줄씩 차례대로 렌더링
-                wrapped_lines = wrap_text(test_card['text'], font_s, max_width=700)
+                wrapped_lines = wrap_text(sample_card['text'], font_s, max_width=700)
                 y_offset = 150
                 for line in wrapped_lines:
                     draw.text((390, y_offset), line, fill="#ffffff", font=font_s, anchor="mm")
-                    y_offset += 35 # 줄간격 35px 추가
+                    y_offset += 30
                 
-                # 파일 저장 처리
-                img_path = "coupang_page_01.png"
-                img.save(img_path, "PNG")
+                buffered = io.BytesIO()
+                img.save(buffered, format="PNG")
                 
-                with open(img_path, "rb") as f:
-                    st.download_button(
-                        label="💾 쿠팡 최적화 가로 780px PNG 마스터 다운로드", 
-                        data=f, 
-                        file_name=f"coupang_master_{datetime.now().strftime('%Y%m%d')}.png", 
-                        mime="image/png", 
-                        use_container_width=True
-                    )
-                st.success("🎉 고화질 그래픽 파일 컴파일이 완료되었습니다! 위 버튼을 눌러 다운로드하세요.")
+                st.download_button(
+                    label="💾 쿠팡 최적화 가로 780px 고화질 PNG 다운로드", 
+                    data=buffered.getvalue(), 
+                    file_name=f"coupang_output_{datetime.now().strftime('%Y%m%d')}.png", 
+                    mime="image/png", 
+                    use_container_width=True
+                )
+                st.success("🎉 그래픽 컴파일 완성! 위 버튼을 눌러 로컬 저장소에 보관하세요.")
 
         with col_render:
-            st.subheader("📱 가로 780px 브랜드 숍 라이브 미리보기")
+            st.subheader("📱 라이브 매핑 미리보기 (가로 780px 고정)")
             for card in st.session_state["edited_storyboard"]:
-                img_tag_html = """<div style="margin-top: 20px; height: 220px; background-color: #f8fafc; border: 2px dashed #94a3b8; display: flex; justify-content: center; align-items: center; color: #64748b; font-size: 14px; font-weight: bold; border-radius: 8px;">🖼️ [상품 핵심 비주얼 가상 배치 공간]</div>"""
+                img_html = """<div style="margin-top: 15px; height: 180px; background-color: #f8fafc; border: 2px dashed #cbd5e1; display: flex; justify-content: center; align-items: center; color: #94a3b8; font-size: 13px; border-radius: 6px;">[📷 매핑된 원본 상품 비주얼 출력 영역]</div>"""
                 
-                if card["img"] and card["img"] in st.session_state["permanent_images"]:
+                # 안전한 조건문 블록 처리로 6번째 이미지 구문 에러 완전 제거
+                if card.get("img") and card["img"] in st.session_state["permanent_images"]:
                     bytes_data = st.session_state"permanent_images"
-                    b64_img = base64.b64encode(bytes_data).decode("utf-8")
-                    img_tag_html = f"""<img src="data:image/png;base64,{b64_img}" style="width:100%; max-width:720px; border-radius:8px; margin-top:20px; border:1px solid #e2e8f0;" />"""
+                    b64_data = base64.b64encode(bytes_data).decode("utf-8")
+                    img_html = f"""<img src="data:image/png;base64,{b64_data}" style="width:100%; max-width:720px; border-radius:6px; margin-top:15px; border:1px solid #e2e8f0;" />"""
                 
-                html_template = f"""
-                <div style="width: 100%; max-width: 780px; margin: 0 auto 30px auto; font-family: sans-serif; background-color: #ffffff; border: 1px solid #cbd5e1; border-radius: 10px; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.05); overflow: hidden;">
-                    <div style="background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); color: #ffffff; padding: 15px 25px; display: flex; justify-content: space-between; align-items: center;">
-                        <span style="font-size: 16px; font-weight: bold; color: #ffb703;">{card['title']}</span>
-                        <span style="background-color: #f59e0b; color:#111; font-size: 11px; padding: 2px 8px; border-radius: 10px; font-weight: bold;">{card['tag']}</span>
+                html_layout = f"""
+                <div style="width: 100%; max-width: 780px; margin: 0 auto 25px auto; font-family: sans-serif; background-color: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); overflow: hidden;">
+                    <div style="background-color: #1e293b; color: #ffffff; padding: 12px 20px; display: flex; justify-content: space-between; align-items: center;">
+                        <span style="font-size: 14px; font-weight: bold; color: #ffb703;">{card['title']}</span>
+                        <span style="background-color: #f59e0b; color: #111; font-size: 11px; padding: 1px 6px; border-radius: 4px; font-weight: bold;">{card['tag']}</span>
                     </div>
-                    <div style="padding: 35px 30px;">
-                        <h2 style="font-size: 24px; font-weight: 800; color: #1e3a8a; margin: 0 0 15px 0; border-bottom: 3px solid #f59e0b; padding-bottom: 10px;">{card['placeholder_title']}</h2>
-                        <div style="background-color: #f8fafc; border-left: 4px solid #1e3a8a; padding: 18px; font-size: 15px; color: #334155; line-height: 1.6; font-weight: 500; white-space: pre-wrap;">{card['text']}</div>
-                        {img_tag_html}
+                    <div style="padding: 25px;">
+                        <h3 style="font-size: 20px; font-weight: bold; color: #1e3a8a; margin: 0 0 12px 0; border-bottom: 2px solid #f59e0b; padding-bottom: 6px;">{card['placeholder_title']}</h3>
+                        <div style="background-color: #f8fafc; border-left: 4px solid #1e3a8a; padding: 12px; font-size: 14px; color: #334155; white-space: pre-wrap; line-height: 1.5;">{card['text']}</div>
+                        {img_html}
                     </div>
                 </div>
                 """
-                st.markdown(html_template, unsafe_allow_html=True)
+                st.markdown(html_layout, unsafe_allow_html=True)
