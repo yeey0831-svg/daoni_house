@@ -7,10 +7,18 @@ from PIL import Image, ImageDraw, ImageFont
 # =========================================================================
 # ⚙️ [글로벌 환경 설정 및 시스템 유틸리티]
 # =========================================================================
-st.set_page_config(page_title="Daon 코어 상세페이지 엔진 v3.5", layout="wide")
+st.set_page_config(page_title="Daon 원화면 통합 빌더 v4.0", layout="wide")
+
+# CSS를 이용해 가독성 및 UI 레이아웃 소폭 조정
+st.markdown("""
+    <style>
+    .block-container { padding-top: 2rem; padding-bottom: 2rem; }
+    h1, h2, h3 { font-family: 'Malgun Gothic', sans-serif; }
+    </style>
+""", unsafe_allow_html=True)
 
 def get_safe_font(font_size=24):
-    """서버 환경에 관계없이 폰트 에러(OSError)를 원천 차단하는 안전 백업 시스템"""
+    """서버 환경 오류를 차단하는 안전 백업 폰트 시스템"""
     font_names = ["NanumGothic.ttf", "malgun.ttf", "Arial.ttf"]
     for name in font_names:
         try:
@@ -20,20 +28,16 @@ def get_safe_font(font_size=24):
     return ImageFont.load_default()
 
 def wrap_text(text, font, max_width=700):
-    """가상 캔버스 안에서 텍스트가 삐져나가지 않도록 자동 줄바꿈을 해주는 유틸리티"""
+    """가상 캔버스 안에서 자동 줄바꿈을 처리하는 헬퍼"""
     lines = []
     if not text:
         return lines
     words = text.split(" ")
     current_line = ""
-    
     for word in words:
         test_line = current_line + " " + word if current_line else word
-        try:
-            w = font.getbbox(test_line)[2]
-        except Exception:
-            w = len(test_line) * 12
-            
+        try: w = font.getbbox(test_line)[2]
+        except Exception: w = len(test_line) * 12
         if w <= max_width:
             current_line = test_line
         else:
@@ -43,180 +47,138 @@ def wrap_text(text, font, max_width=700):
         lines.append(current_line)
     return lines
 
-# Daon 브랜드 커스텀 8단 프레임워크 구조 고정
-NANOBANANA_FRAMEWORK = [
-    {"num": 1, "tag": "Hero", "title": "👑 01. 메인 감성 서브타이틀", "ph_title": "공간의 가치를 바꾸는 단 하나의 선택", "ph_text": "[공동구매] Daon 스택 슬라이딩 정리함"},
-    {"num": 2, "tag": "Pain", "title": "🚨 02. 고객 문제 제기 헤드라인", "ph_title": "아직도 깊숙한 곳의 물건을 쌓아두고 어렵게 꺼내십니까?", "ph_text": "안쪽 물건 꺼내려다 위에 쌓인 물건들이 다 쏟아져 내렸어요..."},
-    {"num": 3, "tag": "Detail1", "title": "🛠️ 03. 초정밀 스펙 소구", "ph_title": "손가락 하나로 스르륵, 프리미엄 볼베어링 레일 모션", "ph_text": "고중량 제품을 수납해도 걸림 없이 처음 느낌 그대로 부드럽게 슬라이딩됩니다."},
-    {"num": 4, "tag": "Detail2", "title": "📐 04. 공간 극대화 시스템", "ph_title": "위로 쌓아 넓어지는 마법 같은 수납 레이아웃", "ph_text": "흔들림 없는 수직 적층 결합 구조로 데드스페이스를 200% 복원합니다."},
-    {"num": 5, "tag": "Safe", "title": "🛡️ 05. 안심 소재 및 내구성", "ph_title": "부식 걱정 없는 두터운 강철 방청 코팅 프레임", "ph_text": "습한 환경에서도 녹슬지 않는 특수 도장 공정을 적용하여 오랜 시간 변형 없이 견고합니다."},
-    {"num": 6, "tag": "Review", "title": "⭐️ 06. 실사용자 리얼 리뷰 후킹", "ph_title": "리조트 쇼룸처럼 깔끔해졌어요! (평점 4.9의 찬사)", "ph_text": "'살까 말까 고민했던 시간이 아깝습니다. 한 달째 쓰는데 튼튼함이 다릅니다.'"},
-    {"num": 7, "tag": "Compare", "title": "📊 07. 일반 저가형 제품과의 격차 타격", "ph_title": "쉽게 휘어지고 덜덜거리는 싸구려와 비교를 거부합니다", "ph_text": "풀 메탈 강철 뼈대의 압도적인 안정성으로 주방과 거실의 품격을 완성합니다."},
-    {"num": 8, "tag": "CTA", "title": "🛒 08. 구매 촉구 마감 메시지", "ph_title": "한정 수량 당일 출고 배송 혜택 종료 임박", "ph_text": "지금 기회를 놓치면 정상가로 환원됩니다. 망설임은 배송만 늦출 뿐입니다."}
-]
-
-# 🗂️ [세션 스테이트 보존 엔진 - 불시 초기화 방지 락인]
-if "prod_name" not in st.session_state:
-    st.session_state["prod_name"] = "Daon 멀티탭 정리함"
-if "prod_desc" not in st.session_state:
-    st.session_state["prod_desc"] = "지저분한 선들을 깔끔하게 숨겨주는 모던 정리함"
-if "permanent_images" not in st.session_state:
-    st.session_state["permanent_images"] = {}
-if "edited_storyboard" not in st.session_state:
-    st.session_state["edited_storyboard"] = []
+# =========================================================================
+# 🗂️ [세션 스테이트 메모리 고정 고리]
+# =========================================================================
+if "generated" not in st.session_state:
+    st.session_state["generated"] = False
+if "storyboard_data" not in st.session_state:
+    st.session_state["storyboard_data"] = []
+if "img_cache" not in st.session_state:
+    st.session_state["img_cache"] = {}
 
 # =========================================================================
-# 🧭 [사이드바 메뉴 컨트롤러]
+# 🏗️ [단일 화면 레이아웃 정의: 좌측 제어 타워 | 우측 실시간 프리뷰]
 # =========================================================================
-st.sidebar.title("🍌 Daon 코어 빌더 v3.5")
-page = st.sidebar.radio(
-    "작업 단계 선택", 
-    ["🏠 1단계: 마스터 기획 입력", 
-     "⚡ 2단계: AI 시나리오 빌드", 
-     "🎨 3단계: 텍스트 및 이미지 매핑", 
-     "🖼️ 4단계: 780px 정밀 미리보기 및 다운로드"]
-)
+col_input, col_preview = st.columns([1, 1.2], gap="large")
 
-# =========================================================================
-# 🏠 1단계: 마스터 기획 입력
-# =========================================================================
-if page == "🏠 1단계: 마스터 기획 입력":
-    st.header("🏠 1단계: 원천 기획 소스 입력")
-    st.session_state["prod_name"] = st.text_input("💎 원본 상품명", value=st.session_state["prod_name"])
-    st.session_state["prod_desc"] = st.text_area("📝 상품 기본 설명", value=st.session_state["prod_desc"], height=80)
+# -------------------------------------------------------------------------
+# ⬅️ [좌측 영역] 상품 정보 입력 및 제어 타워
+# -------------------------------------------------------------------------
+with col_input:
+    st.title("🍌 Daon 통합 빌더 v4.0")
+    st.subheader("📝 1. 원천 기획 데이터 입력")
+    
+    # 대표님이 입력하시는 실제 상품 정보 칸
+    prod_name = st.text_input("💎 원본 상품명", value="다온이네 밀봉 자석집게 6세트")
+    prod_desc = st.text_area(
+        "📝 상품 핵심 요약 및 설명", 
+        value="자석집게로 냉장고 등 자석이 붙는 곳이면 어디든 간편하게 부착하여 보관 가능. 먹고남은 과자 봉투를 접어서 꽉 집어주세요.",
+        height=100
+    )
     
     st.markdown("---")
-    st.subheader("📷 마스터 이미지 대량 업로드")
-    uploaded_files = st.file_uploader("사용할 원본 파일들을 선택하세요.", type=["png", "jpg", "jpeg"], accept_multiple_files=True)
+    st.subheader("📷 2. 이미지 에셋 일괄 업로드")
+    uploaded_files = st.file_uploader("상세페이지에 매핑할 이미지들을 한 번에 선택하세요.", type=["png", "jpg", "jpeg"], accept_multiple_files=True)
     
-    if st.button("🚀 기획 데이터 및 이미지 캐시 저장", use_container_width=True):
-        if uploaded_files:
-            temp_dict = {}
-            for f in uploaded_files:
-                temp_dict[f.name] = f.read()
-            st.session_state["permanent_images"] = temp_dict
-            st.success(f"📂 이미지 {len(temp_dict)}장이 캐시 보존고에 저장되었습니다! 2단계로 이동하세요.")
-        else:
-            st.success("📝 텍스트 자산만 안전하게 저장되었습니다. (등록된 이미지 없음)")
+    # 이미지 업로드 시 즉각 캐시 컨테이너에 저장
+    if uploaded_files:
+        for f in uploaded_files:
+            st.session_state["img_cache"][f.name] = f.read()
 
-# =========================================================================
-# ⚡ 2단계: AI 시나리오 빌드
-# =========================================================================
-elif page == "⚡ 2단계: AI 시나리오 빌드":
-    st.header("⚡ 2단계: 8단 시나리오 구조 생성")
-    if st.button("기본 프레임워크 불러오기", use_container_width=True):
-        storyboard = []
-        for frame in NANOBANANA_FRAMEWORK:
-            storyboard.append({
-                "num": frame["num"],
-                "tag": frame["tag"],
-                "title": frame["title"],
-                "placeholder_title": frame["ph_title"],
-                "text": frame["ph_text"],
-                "img": None
-            })
-        st.session_state["edited_storyboard"] = storyboard
-        st.success("✅ 시나리오 구조가 성공적으로 동적 배치되었습니다! 3단계로 이동하세요.")
+    st.markdown("---")
+    
+    # [핵심] 생성 버튼 클릭 시, 고정된 값이 아니라 대표님이 위에 입력한 상품명/설명을 기반으로 8단 배열을 즉시 조립합니다.
+    if st.button("🚀 입력 정보 기반 8단 상세페이지 생성", use_container_width=True, type="primary"):
+        framework_templates = [
+            {"num": 1, "tag": "Hero", "title": "👑 01. 메인 감성 타이틀", "suffix": "공간의 가치를 바꾸는 단 하나의 선택", "text": f"[공동구매/특가] {prod_name} 드디어 상륙!"},
+            {"num": 2, "tag": "Pain", "title": "🚨 02. 문제 제기 후킹", "suffix": "아직도 눅눅해진 봉지 그대로 방치하십니까?", "text": f"기존 방식은 쉽게 풀리고 공기가 통해 금방 상해버립니다. {prod_name}(으)로 해결하세요."},
+            {"num": 3, "tag": "Detail1", "title": "🛠️ 03. 초정밀 스펙 소구", "suffix": "강력한 고정력과 빈틈없는 완전 밀봉 성능", "text": f"{prod_desc} - 성능 시험을 모두 통과한 압도적 퀄리티를 자랑합니다."},
+            {"num": 4, "tag": "Detail2", "title": "📐 04. 사용자 편의성", "suffix": "자석 설계로 보관과 사용을 동시에 편리하게", "text": "냉장고나 철제 벽면에 쓱 붙여두고 필요할 때마다 1초 만에 꺼내 쓰세요."},
+            {"num": 5, "tag": "Safe", "title": "🛡️ 05. 내구성 및 안심 소재", "suffix": "오래 써도 변함없는 견고한 스프링 장력", "text": "싸구려 플라스틱과 비교 불가! 녹슬지 않는 내장 부품과 두터운 마감 처리를 완료했습니다."},
+            {"num": 6, "tag": "Review", "title": "⭐️ 06. 실사용자 후기 조명", "suffix": "살까 말까 고민했던 시간이 아깝습니다!", "text": "'디자인도 예쁘고 자석이 있어서 잃어버릴 염려가 없네요. 주방 필수템 인정입니다.'"},
+            {"num": 7, "tag": "Compare", "title": "📊 저가형 대비 격차 타격", "suffix": "쉽게 부러지는 일반 집게와의 비교를 거부합니다", "text": "다온(Daon)만의 독점 공정 퀄리티로 한 번 사면 평생 쓰는 주방의 품격을 완성합니다."},
+            {"num": 8, "tag": "CTA", "title": "🛒 구매 촉구 엔딩 메시지", "suffix": "한정 수량 당일 출고 마감 임박", "text": "망설임은 배송만 늦출 뿐입니다. 지금 특가 혜택으로 스마트한 라이프를 시작하세요!"}
+        ]
         
-    if st.session_state["edited_storyboard"]:
-        st.json([{"단계": s["num"], "타이틀": s["placeholder_title"]} for s in st.session_state["edited_storyboard"]])
+        st.session_state["storyboard_data"] = framework_templates
+        st.session_state["generated"] = True
+        st.success("🎯 우측에 대표님의 상품 맞춤형 8단 상세페이지가 실시간 빌드되었습니다!")
 
-# =========================================================================
-# 🎨 3단계: 텍스트 및 이미지 매핑
-# =========================================================================
-elif page == "🎨 3단계: 텍스트 및 이미지 매핑":
-    st.header("🎨 3단계: 상세 매핑 편집기")
-    if not st.session_state["edited_storyboard"]:
-        st.warning("⚠️ 2단계에서 프레임워크 빌드 버튼을 먼저 실행해 주세요.")
+    # 다운로드 유틸리티 기능 배치
+    if st.session_state["generated"]:
+        st.markdown("---")
+        st.subheader("💾 고화질 통이미지 다운로드 추출기")
+        if st.button("🖼️ 1번 메인 카드 PNG 파일로 컴파일", use_container_width=True):
+            font_m = get_safe_font(24)
+            font_s = get_safe_font(16)
+            card = st.session_state["storyboard_data"][0]
+            
+            img = Image.new("RGB", (780, 450), "#1e3a8a")
+            draw = ImageDraw.Draw(img)
+            draw.text((390, 50), f"{card['suffix']}", fill="#ffb703", font=font_m, anchor="mm")
+            
+            wrapped = wrap_text(card['text'], font_s, max_width=700)
+            y_off = 150
+            for ln in wrapped:
+                draw.text((390, y_off), ln, fill="#ffffff", font=font_s, anchor="mm")
+                y_off += 30
+                
+            buf = io.BytesIO()
+            img.save(buf, format="PNG")
+            st.download_button(
+                label="💾 1번 PNG 마스터 파일 다운로드 받기",
+                data=buf.getvalue(),
+                file_name=f"daon_master_card.png",
+                mime="image/png",
+                use_container_width=True
+            )
+
+# -------------------------------------------------------------------------
+# ➡️ [우측 영역] 실시간 8장 상세페이지 위젯 + 이미지 매핑 및 시각화
+# -------------------------------------------------------------------------
+with col_preview:
+    st.title("🖼️ 실시간 8단 편집 & 가로 780px 프리뷰")
+    
+    if not st.session_state["generated"]:
+        st.info("💡 좌측에서 상품명과 설명을 작성하신 뒤 [🚀 입력 정보 기반 8단 상세페이지 생성] 버튼을 누르면 이 공간에 편집 매핑 레이아웃이 즉시 표시됩니다.")
     else:
-        saved_image_names = ["선택 안 함"] + list(st.session_state["permanent_images"].keys())
-        sync_holder = []
+        # 가용 가능한 업로드 파일 목록 구성
+        img_options = ["선택 안 함"] + list(st.session_state["img_cache"].keys())
         
-        for card in st.session_state["edited_storyboard"]:
-            with st.expander(f"📦 블록 0{card['num']} : {card['title']}", expanded=True):
-                c_title = st.text_input(f"타이틀 편집 (블록_{card['num']})", value=card['placeholder_title'], key=f"t_{card['num']}")
-                c_text = st.text_area(f"리얼 카피라이팅 문구 (블록_{card['num']})", value=card['text'], key=f"x_{card['num']}", height=80)
+        # 8장의 카드를 루프 돌며 편집창과 프리뷰를 일체형으로 표기
+        for idx, card in enumerate(st.session_state["storyboard_data"]):
+            with st.container():
+                # 개별 블록 테두리 구분선
+                st.markdown(f"### {card['title']}")
                 
-                if card.get("img") in saved_image_names:
-                    default_idx = saved_image_names.index(card.get("img"))
-                else:
-                    default_idx = 0
-                    
-                selected_img = st.selectbox(f"📷 매핑할 이미지 선택", options=saved_image_names, index=default_idx, key=f"i_{card['num']}")
+                # 실시간 카피 문구 미세 편집 칸
+                edited_suffix = st.text_input(f"소제목 수정 (카드 {card['num']})", value=card['suffix'], key=f"sub_{idx}")
+                edited_text = st.text_area(f"본문 문구 수정 (카드 {card['num']})", value=card['text'], key=f"txt_{idx}", height=70)
                 
-                sync_holder.append({
-                    "num": card["num"],
-                    "tag": card["tag"],
-                    "title": card["title"],
-                    "placeholder_title": c_title,
-                    "text": c_text,
-                    "img": None if selected_img == "선택 안 함" else selected_img
-                })
+                # 이미지 즉시 매핑 칸 (좌측에서 올린 이미지가 여기 실시간 리스트로 등장)
+                chosen_img = st.selectbox(f"📷 0{card['num']} 장에 배치할 이미지 매핑", options=img_options, key=f"sel_img_{idx}")
                 
-        if st.button("💾 매핑 데이터 최종 동기화 및 적용", use_container_width=True):
-            st.session_state["edited_storyboard"] = sync_holder
-            st.success("🎯 전 섹션 비주얼 동기화 매핑 성공! 4단계로 이동하여 확인하세요.")
-
-# =========================================================================
-# 🖼️ 4단계: 780px 정밀 미리보기 및 다운로드
-# =========================================================================
-elif page == "🖼️ 4단계: 780px 정밀 미리보기 및 다운로드":
-    st.header("🖼️ 4단계: 쿠팡 가로 780px 정밀 미리보기 및 마스터 파일 추출")
-    if not st.session_state["edited_storyboard"]:
-        st.warning("⚠️ 3단계에서 매핑 데이터 최종 동기화 버튼을 완료하셔야 렌더링 엔진이 작동합니다.")
-    else:
-        col_side, col_render = st.columns([1, 2])
-        
-        with col_side:
-            st.subheader("💾 고화질 마스터 파일 추출")
-            if st.button("🚀 샘플 1번 카드 PNG 다운로드 빌드", use_container_width=True):
-                font_m = get_safe_font(24)
-                font_s = get_safe_font(16)
+                # HTML 780px 실시간 렌더링 엔진 작동
+                img_html_render = '<div style="margin-top: 12px; height: 140px; background-color: #f1f5f9; border: 2px dashed #cbd5e1; display: flex; justify-content: center; align-items: center; color: #64748b; font-size: 13px; border-radius: 6px;">[📷 매핑 선택된 이미지가 없습니다]</div>'
                 
-                sample_card = st.session_state["edited_storyboard"][0]
-                img = Image.new("RGB", (780, 450), "#1e3a8a")
-                draw = ImageDraw.Draw(img)
+                if chosen_img != "선택 안 함" and chosen_img in st.session_state["img_cache"]:
+                    raw_bytes = st.session_state["img_cache"][chosen_img]
+                    b64_str = base64.b64encode(raw_bytes).decode("utf-8")
+                    img_html_render = f'<img src="data:image/png;base64,{b64_str}" style="width:100%; max-width:740px; border-radius:6px; margin-top:12px; border:1px solid #cbd5e1;" />'
                 
-                draw.text((390, 50), f"{sample_card['placeholder_title']}", fill="#ffb703", font=font_m, anchor="mm")
-                wrapped_lines = wrap_text(sample_card['text'], font_s, max_width=700)
-                y_offset = 150
-                for line in wrapped_lines:
-                    draw.text((390, y_offset), line, fill="#ffffff", font=font_s, anchor="mm")
-                    y_offset += 30
-                
-                buffered = io.BytesIO()
-                img.save(buffered, format="PNG")
-                
-                st.download_button(
-                    label="💾 PNG 마스터 파일 다운로드", 
-                    data=buffered.getvalue(), 
-                    file_name=f"daon_output_{datetime.now().strftime('%Y%m%d')}.png", 
-                    mime="image/png", 
-                    use_container_width=True
-                )
-                st.success("🎉 그래픽 컴파일 완수!")
-
-        with col_render:
-            st.subheader("📱 라이브 매핑 미리보기 (가로 780px 고정)")
-            for card in st.session_state["edited_storyboard"]:
-                img_html = '<div style="margin-top: 15px; height: 180px; background-color: #f8fafc; border: 2px dashed #cbd5e1; display: flex; justify-content: center; align-items: center; color: #94a3b8; font-size: 13px; border-radius: 6px;">[📷 이미지가 선택되지 않았습니다]</div>'
-                
-                chosen_img = card.get("img")
-                if chosen_img and chosen_img in st.session_state["permanent_images"]:
-                    bytes_data = st.session_state["permanent_images"][chosen_img]
-                    b64_data = base64.b64encode(bytes_data).decode("utf-8")
-                    img_html = f'<img src="data:image/png;base64,{b64_data}" style="width:100%; max-width:720px; border-radius:6px; margin-top:15px; border:1px solid #e2e8f0;" />'
-                
-                html_layout = f"""
-                <div style="width: 100%; max-width: 780px; margin: 0 auto 25px auto; font-family: sans-serif; background-color: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); overflow: hidden;">
-                    <div style="background-color: #1e293b; color: #ffffff; padding: 12px 20px; display: flex; justify-content: space-between; align-items: center;">
-                        <span style="font-size: 14px; font-weight: bold; color: #ffb703;">{card['title']}</span>
+                # 최종 쿠팡형 가로 780px 박스 아웃풋 디자인 실시간 표출
+                html_card_box = f"""
+                <div style="width: 100%; max-width: 780px; margin: 15px auto 40px auto; font-family: sans-serif; background-color: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.06); overflow: hidden;">
+                    <div style="background-color: #1e293b; color: #ffffff; padding: 10px 18px; font-size: 13px; font-weight: bold; letter-spacing: 0.5px;">
+                        DAON CORE FRAMEWORK BLOCKED #0{card['num']}
                     </div>
-                    <div style="padding: 25px;">
-                        <h3 style="font-size: 20px; font-weight: bold; color: #1e3a8a; margin: 0 0 12px 0; border-bottom: 2px solid #f59e0b; padding-bottom: 6px;">{card['placeholder_title']}</h3>
-                        <div style="background-color: #f8fafc; border-left: 4px solid #1e3a8a; padding: 12px; font-size: 14px; color: #334155; white-space: pre-wrap; line-height: 1.5;">{card['text']}</div>
-                        {img_html}
+                    <div style="padding: 22px;">
+                        <h4 style="font-size: 18px; font-weight: bold; color: #1e3a8a; margin: 0 0 10px 0; border-bottom: 2px solid #f59e0b; padding-bottom: 5px;">{edited_suffix}</h4>
+                        <div style="background-color: #fafafa; border-left: 4px solid #1e3a8a; padding: 12px; font-size: 14px; color: #334155; line-height: 1.6; white-space: pre-wrap;">{edited_text}</div>
+                        {img_html_render}
                     </div>
                 </div>
                 """
-                st.markdown(html_layout, unsafe_allow_html=True)
+                st.markdown(html_card_box, unsafe_allow_html=True)
+                st.markdown("<hr style='border:1px dashed #e2e8f0; margin:30px 0;' />", unsafe_allow_html=True)
