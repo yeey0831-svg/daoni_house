@@ -1,16 +1,18 @@
 import streamlit as st
 import json
 import base64
+import io
+# 📌 [에러 해결 핵심] 누락되었던 datetime 모듈을 명확히 선언
 from datetime import datetime
 from PIL import Image, ImageDraw, ImageFont
-import io
 
 # =========================================================================
 # ⚙️ [글로벌 환경 설정 및 시스템 유틸리티]
 # =========================================================================
-st.set_page_config(page_title="나노바나나 AI 8단 상세페이지 빌더 v1.1", layout="wide")
+st.set_page_config(page_title="나노바나나 AI 8단 상세페이지 빌더 v1.2", layout="wide")
 
 def get_safe_font(font_size=24):
+    """서버 배포 시 폰트 누락으로 인한 OSError를 철저히 방지하는 안전 함수"""
     font_paths = [
         "NanumGothic.ttf", 
         "C:/Windows/Fonts/malgun.ttf", 
@@ -23,6 +25,25 @@ def get_safe_font(font_size=24):
         except OSError:
             continue
     return ImageFont.load_default()
+
+def wrap_text(text, font, max_width=700):
+    """한글 문구가 가로 780px를 넘길 때 자동으로 줄바꿈 리스트를 만들어주는 특급 함수"""
+    lines = []
+    words = text.split(" ")
+    current_line = ""
+    
+    for word in words:
+        test_line = current_line + " " + word if current_line else word
+        # 글자 너비 계산
+        w = font.getbbox(test_line)[2]
+        if w <= max_width:
+            current_line = test_line
+        else:
+            lines.append(current_line)
+            current_line = word
+    if current_line:
+        lines.append(current_line)
+    return lines
 
 # 나노바나나 핵심 상세페이지 8단 배열 정의
 NANOBANANA_FRAMEWORK = [
@@ -40,7 +61,7 @@ NANOBANANA_FRAMEWORK = [
 if "prod_name" not in st.session_state: st.session_state["prod_name"] = "루시아이 스택 슬라이딩 팬트리 정리함"
 if "prod_desc" not in st.session_state: st.session_state["prod_desc"] = "좁은 틈새와 노는 공간을 100% 활용하는 슬라이딩 가구 정리함"
 if "prod_benefits" not in st.session_state: st.session_state["prod_benefits"] = "부드러운 레일 모션 / 수직 적층 구조 / 강철 프레임 내구성"
-if "permanent_images" not in st.session_state: st.session_state["permanent_images"] = {} # 이미지 바이너리 보관용
+if "permanent_images" not in st.session_state: st.session_state["permanent_images"] = {}
 if "edited_storyboard" not in st.session_state: st.session_state["edited_storyboard"] = []
 if "master_gallery" not in st.session_state: st.session_state["master_gallery"] = []
 
@@ -76,16 +97,14 @@ if page == "🏠 1페이지: 마스터 컨트롤러":
         st.subheader("📷 1.2단계: 상품 마스터 이미지 대량 업로드")
         uploaded_files = st.file_uploader("상세페이지 각 섹션에 매핑할 원본 이미지들을 올려주세요.", type=["png", "jpg", "jpeg"], accept_multiple_files=True)
         
-        # 📌 [핵심 수정] 작동 버튼 생성 및 이미지 바이너리 강제 세션 저장 (증발 방지)
         if st.button("🚀 기획 데이터 확정 및 AI 빌드 준비 완료", use_container_width=True):
             if uploaded_files:
                 temp_dict = {}
                 for f in uploaded_files:
-                    # 파일 리드 후 세션에 바이트 정보 보존
                     file_bytes = f.read()
                     temp_dict[f.name] = file_bytes
                 st.session_state["permanent_images"] = temp_dict
-                st.success(f"📂 이미지 {len(temp_dict)}장 및 텍스트 데이터 가 보존소에 안전하게 잠금되었습니다! 2페이지로 이동하세요.")
+                st.success(f"📂 이미지 {len(temp_dict)}장 및 텍스트 데이터가 보존소에 안전하게 잠금되었습니다! 2페이지로 이동하세요.")
             else:
                 st.success("📝 텍스트 기획 자산이 먼저 잠금되었습니다! (업로드된 이미지 없음)")
                 
@@ -115,7 +134,6 @@ elif page == "⚡ 2페이지: AI 8단 시나리오 빌더":
     st.header("⚡ 2페이지: 나노바나나 스타일 이커머스 치트키 8단 시나리오 생성기")
     st.markdown("---")
     
-    # 1페이지에서 저장한 이미지 개수 실시간 모니터링 (증발 여부 확인용)
     img_count = len(st.session_state["permanent_images"])
     st.sidebar.metric(label="보존고 내 이미지 수", value=f"{img_count}장 보존 중")
     
@@ -148,7 +166,6 @@ elif page == "🎨 3페이지: 비주얼 매핑 편집기":
     if not st.session_state["edited_storyboard"]:
         st.warning("⚠️ 2페이지에서 '8단 시나리오 구조 생성' 버튼을 먼저 클릭해 주세요.")
     else:
-        # 📌 [핵심 수정] 1페이지에서 안전하게 넘어온 보존 이미지 파일명 리스트 파싱
         saved_image_names = list(st.session_state["permanent_images"].keys())
         img_options = ["선택 안 함 (기본 템플릿 대체)"] + saved_image_names
         
@@ -195,10 +212,47 @@ elif page == "🖼️ 4페이지: 쿠팡 780px 그룹 저장소":
                 st.session_state["master_gallery"] = st.session_state["edited_storyboard"]
                 st.success("🚀 저장소 등록 성공! 1페이지 메인화면으로 복원용 원격 데이터 피드가 연동되었습니다.")
 
+            st.markdown("---")
+            st.subheader("💾 고화질 마스터 그래픽 생성")
+            
+            if st.button("🚀 다운로드용 물리 PNG 8장 압축 빌드 가동", use_container_width=True):
+                # 📌 [한글 팅김 및 줄바꿈 해결] 가로 780px 자동 줄바꿈 렌더링 마스터 연산
+                master_height = 450
+                font_m = get_safe_font(28)
+                font_s = get_safe_font(18)
+                
+                # 1번 카드를 대표 샘플 파일로 고화질 빌드
+                test_card = st.session_state["edited_storyboard"][0]
+                img = Image.new("RGB", (780, master_height), "#1e3a8a")
+                draw = ImageDraw.Draw(img)
+                
+                # 메인 타이틀 그리기
+                draw.text((390, 60), f"PAGE 01 : {test_card['placeholder_title']}", fill="#ffb703", font=font_m, anchor="mm")
+                
+                # 📌 긴 카피 텍스트 자동 줄바꿈 함수 호출 후 한 줄씩 차례대로 렌더링
+                wrapped_lines = wrap_text(test_card['text'], font_s, max_width=700)
+                y_offset = 150
+                for line in wrapped_lines:
+                    draw.text((390, y_offset), line, fill="#ffffff", font=font_s, anchor="mm")
+                    y_offset += 35 # 줄간격 35px 추가
+                
+                # 파일 저장 처리
+                img_path = "coupang_page_01.png"
+                img.save(img_path, "PNG")
+                
+                with open(img_path, "rb") as f:
+                    st.download_button(
+                        label="💾 쿠팡 최적화 가로 780px PNG 마스터 다운로드", 
+                        data=f, 
+                        file_name=f"coupang_master_{datetime.now().strftime('%Y%m%d')}.png", 
+                        mime="image/png", 
+                        use_container_width=True
+                    )
+                st.success("🎉 고화질 그래픽 파일 컴파일이 완료되었습니다! 위 버튼을 눌러 다운로드하세요.")
+
         with col_render:
             st.subheader("📱 가로 780px 브랜드 숍 라이브 미리보기")
             for card in st.session_state["edited_storyboard"]:
-                # 📌 [핵심 수정] 사용자가 3페이지에서 선택한 이미지가 세션 보존고에 있다면 화면에 실물로 출력
                 img_tag_html = """<div style="margin-top: 20px; height: 220px; background-color: #f8fafc; border: 2px dashed #94a3b8; display: flex; justify-content: center; align-items: center; color: #64748b; font-size: 14px; font-weight: bold; border-radius: 8px;">🖼️ [상품 핵심 비주얼 가상 배치 공간]</div>"""
                 
                 if card["img"] and card["img"] in st.session_state["permanent_images"]:
